@@ -9,8 +9,8 @@ img = cv2.resize(img, (800, 600), interpolation=cv2.INTER_CUBIC)
 minDist   = 50
 param1    = 50
 param2    = 20
-minRadius = 20
-maxRadius = 100
+minRadius = 10
+maxRadius = 50
 
 minX, maxX = 0,  10
 minY, maxY = 50, 200
@@ -72,6 +72,13 @@ lista = reconhecerSemáforos(lista)
 
 for x, y, r in lista:
     desenharCirculo(img, int(x), int(y), int(r))
+
+x = [int(x) for x, y, r in lista]
+y = [int(y) for x, y, r in lista]
+r = [int(r) for x, y, r in lista]
+
+img = cv2.rectangle(img, (min(x) - 2*max(r), min(y) - 2*max(r)), (max(x) + 2*max(r), max(y) + 2*max(r)),
+                   (0, 0, 255), thickness=4)
 
 cv2.imshow('Semaforo', img)
 cv2.waitKey(0)
