@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-endrecoImagem = r'ImagemSemaforo.jpg'
+endrecoImagem = r'Semaforo2.png'
 
 img = cv2.imread(endrecoImagem)
 img = cv2.resize(img, (800, 600), interpolation=cv2.INTER_CUBIC)
@@ -10,10 +10,10 @@ minDist   = 50
 param1    = 50
 param2    = 20
 minRadius = 20
-maxRadius = 30
+maxRadius = 100
 
-minX, maxX = 0, 10
-minY, maxY = 50, 120
+minX, maxX = 0,  10
+minY, maxY = 50, 200
 
 
 def listaCirculos(img):
@@ -41,12 +41,12 @@ def reconhecerCirculos(img, detected):
 
 
 def reconhecerSemáforos(lista):
-    x = 0
     for i in range(0, len(lista)):
         x1, y1, r1 = lista[i][0], lista[i][1], lista[i][2]
         circulo1 = np.array([x1, y1, r1])
 
         listaCirculos = []
+        x = 0
         for j in range(0, len(lista)):
             if i == j:
                 continue
@@ -68,7 +68,7 @@ def reconhecerSemáforos(lista):
 
 
 lista = listaCirculos(img)
-print(reconhecerSemáforos(lista))
+lista = reconhecerSemáforos(lista)
 
 for x, y, r in lista:
     desenharCirculo(img, int(x), int(y), int(r))
