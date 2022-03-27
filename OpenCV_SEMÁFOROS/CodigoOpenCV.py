@@ -1,25 +1,9 @@
 import cv2
 import numpy as np
 
-enderecoImagem = r'C:\Users\march\OneDrive\Documentos\Imagens Latex\ImagemSemaforo.jpg'
-
-img = cv2.imread(enderecoImagem)
-img = cv2.resize(img, (800, 600), interpolation=cv2.INTER_CUBIC)
-
-minDist   = 50   # DISTÂNCIA MÍNIMA ENTRE CÍRCULOS
-param1    = 50   # GRADIENTE PARA DETECÇÃO DE BORDA
-param2    = 20   # TOLERÂNCIA PARA CÍRCULOS DETECTADOS
-minRadius = 20   # TAMANHO MÍNIMO DO RAIO DOS CÍRCULOS
-maxRadius = 30   # TAMANHO MÁXIMO DO RAIO DOS CÍRCULOS
-
-minX, maxX = 0, 10          # LIMITES HORIZONTAIS PARA DISTÂNCIA (VALIDAÇÃO)
-minY, maxY = 50, 120        # LIMITES VERTICAIS PARA DISTÂNCIA (VALIDAÇÃO)
-distanciaMinimaCores = 20   # DISTÂNCIA MÍNIMA PARA CÍCULO DETECTADO E UM CÍCRULO COM CORES
-
 def show(img):
     cv2.imshow('imagem', img)
     cv2.waitKey(0)
-
 
 def coresSemaforo(img):
     HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -148,14 +132,63 @@ def reconhecerSemaforos(img):
                 distancia = np.array(posicao) - np.array(circulo)
                 distancia = np.linalg.norm(distancia)
 
-                if distancia < distanciaMinimaCores:
+                if distancia < distanciaMaximaCores:
                     print(f'SEMÁFORO {cor} DETECTADO!')
                     return lista
     return []
 
-lista = reconhecerSemaforos(img)
-print(lista)
 
-if lista != []:
-    img = desenharCirculos(img, lista)
-    show(img)
+for c in range(1, 13):
+    endereco = r'FotosSemaforo/Semaforo' + str(c) + '.png'
+
+    img = cv2.imread(endereco)
+    #img = cv2.resize(img, (800, 600), interpolation=cv2.INTER_CUBIC)
+
+    minDist = 50    # DISTÂNCIA MÍNIMA ENTRE CÍRCULOS
+    param1 = 50     # GRADIENTE PARA DETECÇÃO DE BORDA
+    param2 = 20     # TOLERÂNCIA PARA CÍRCULOS DETECTADOS
+    minRadius = 20  # TAMANHO MÍNIMO DO RAIO DOS CÍRCULOS
+    maxRadius = 30  # TAMANHO MÁXIMO DO RAIO DOS CÍRCULOS
+
+    minX, maxX = 0, 10  # LIMITES HORIZONTAIS PARA DISTÂNCIA (VALIDAÇÃO)
+    minY, maxY = 50, 200  # LIMITES VERTICAIS PARA DISTÂNCIA (VALIDAÇÃO)
+    distanciaMaximaCores = 20  # DISTÂNCIA MÁXIMA PARA CÍCULO DETECTADO E UM CÍCRULO COM CORES
+    lista = reconhecerSemaforos(img)
+
+    print()
+    print(endereco)
+
+    for c in range(0, 100):
+        if minDist > 5:
+            minDist -= 5  # DISTÂNCIA MÍNIMA ENTRE CÍRCULOS
+
+        if param2 < 600:
+            param2 += 5
+
+        if minRadius > 5:
+            minRadius -= 5
+
+        if maxRadius < 1000:
+            maxRadius += 5
+
+        if maxX < 100:
+            maxX += 5
+
+        if minY > 5:
+            minY -= 5
+
+        if maxY < 1000:
+            maxY += 5
+
+        if distanciaMaximaCores < 100:
+            distanciaMaximaCores += 5
+
+        lista = reconhecerSemaforos(img)
+        if lista:
+            print(lista)
+            img = desenharCirculos(img, lista)
+            show(img)
+            break
+
+
+
