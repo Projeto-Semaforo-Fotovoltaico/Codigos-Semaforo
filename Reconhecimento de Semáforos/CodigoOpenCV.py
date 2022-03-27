@@ -1,19 +1,74 @@
 import cv2
 import numpy as np
 
-endrecoImagem = r'Semaforo2.png'
+enderecoImagem = r'C:\Users\march\OneDrive\Documentos\Imagens Latex\ImagemSemaforo.jpg'
 
-img = cv2.imread(endrecoImagem)
+img = cv2.imread(enderecoImagem)
 img = cv2.resize(img, (800, 600), interpolation=cv2.INTER_CUBIC)
 
-minDist   = 50
-param1    = 50
-param2    = 20
-minRadius = 10
-maxRadius = 50
+minDist   = 50   # DISTÂNCIA MÍNIMA ENTRE CÍRCULOS
+param1    = 50   # GRADIENTE PARA DETECÇÃO DE BORDA
+param2    = 20   # TOLERÂNCIA PARA CÍRCULOS DETECTADOS
+minRadius = 20   # TAMANHO MÍNIMO DO RAIO DOS CÍRCULOS
+maxRadius = 30   # TAMANHO MÁXIMO DO RAIO DOS CÍRCULOS
 
-minX, maxX = 0,  10
-minY, maxY = 50, 200
+minX, maxX = 0, 10          # LIMITES HORIZONTAIS PARA DISTÂNCIA (VALIDAÇÃO)
+minY, maxY = 50, 120        # LIMITES VERTICAIS PARA DISTÂNCIA (VALIDAÇÃO)
+distanciaMinimaCores = 20   # DISTÂNCIA MÍNIMA PARA CÍCULO DETECTADO E UM CÍCRULO COM CORES
+
+def show(img):
+    cv2.imshow('imagem', img)
+    cv2.waitKey(0)
+
+
+def coresSemaforo(img):
+    HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    # DEFININDO OS LIMITES DE RECONHECIMENTO DE CADA COR
+    lower_red1 = np.array([0, 100, 100])
+    upper_red1 = np.array([10, 255, 255])
+    lower_red2 = np.array([160, 100, 100])
+    upper_red2 = np.array([180, 255, 255])
+    lower_green = np.array([40, 50, 50])
+    upper_green = np.array([90, 255, 255])
+    lower_yellow = np.array([15, 150, 150])
+    upper_yellow = np.array([35, 255, 255])
+
+    # DESTACANDO OS TONS DE VERDE
+    maskg = cv2.inRange(HSV, lower_green, upper_green)
+
+    # DESTACANDO OS TONS DE AMARELO
+    masky = cv2.inRange(HSV, lower_yellow, upper_yellow)
+
+    # DESTACANDO OS TONS DE VERMELHO (USANDO DOIS INTERVALOS DESEJADOS)
+    mask1 = cv2.inRange(HSV, lower_red1, upper_red1)
+    mask2 = cv2.inRange(HSV, lower_red2, upper_red2)
+    maskr = cv2.add(mask1, mask2)
+
+    redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, 80,
+                                  param1=50, param2=10, minRadius=0, maxRadius=30)
+
+    greenCircles = cv2.HoughCircles(maskg, cv2.HOUGH_GRADIENT, 1, 60,
+                                    param1=50, param2=10, minRadius=0, maxRadius=30)
+
+    yellowCircles = cv2.HoughCircles(masky, cv2.HOUGH_GRADIENT, 1, 30,
+                                     param1=50, param2=5, minRadius=0, maxRadius=30)
+
+    listaCirculos = []
+
+    if type(redCircles).__module__ == np.__name__:
+        for coordenadas in redCircles[0]:
+            listaCirculos.append(['vermelho', coordenadas[0]])
+
+    if type(greenCircles).__module__ == np.__name__:
+        for coordenadas in greenCircles:
+            listaCirculos.append(['verde', coordenadas[0]])
+
+    if type(yellowCircles).__module__ == np.__name__:
+        for coordenadas in yellowCircles:
+            listaCirculos.append(['amarelo', coordenadas[0]])
+
+    return listaCirculos
 
 
 def listaCirculos(img):
@@ -25,6 +80,8 @@ def listaCirculos(img):
         detected = np.around(detected)  # CONVERTENDO OS VALORES PARA INTEIRO
         return detected[0, :]
 
+    return []
+
 
 def desenharCirculo(img, x, y, r):
     # Draw the circumference of the circle.
@@ -34,13 +91,25 @@ def desenharCirculo(img, x, y, r):
     cv2.circle(img, (x, y), 1, (0, 0, 255), 3)
 
 
-def reconhecerCirculos(img, detected):
+def desenharCirculos(img, detected):
+    if not len(detected):
+        return
+
     for circulo in detected:
-        x, y, r = circulo[0], circulo[1], circulo[2]
+        x, y, r = int(circulo[0]), int(circulo[1]), int(circulo[2])
         desenharCirculo(img, x, y, r)
 
+    x = [int(x) for x, y, r in detected]
+    y = [int(y) for x, y, r in detected]
+    r = [int(r) for x, y, r in detected]
 
-def reconhecerSemáforos(lista):
+    img = cv2.rectangle(img, (min(x) - 2 * max(r), min(y) - 2 * max(r)), (max(x) + 2 * max(r), max(y) + 2 * max(r)),
+                        (0, 0, 255), thickness=4)
+
+    return img
+
+
+def processarCirculos(lista):
     for i in range(0, len(lista)):
         x1, y1, r1 = lista[i][0], lista[i][1], lista[i][2]
         circulo1 = np.array([x1, y1, r1])
@@ -63,22 +132,30 @@ def reconhecerSemáforos(lista):
 
             if x == 2:
                 listaCirculos.append(circulo1)
-                print('semáforo detectado!')
                 return listaCirculos
 
+    return []
 
-lista = listaCirculos(img)
-lista = reconhecerSemáforos(lista)
 
-for x, y, r in lista:
-    desenharCirculo(img, int(x), int(y), int(r))
+def reconhecerSemaforos(img):
+    lista = listaCirculos(img)
+    lista = processarCirculos(lista)
+    listaCores = coresSemaforo(img)
 
-x = [int(x) for x, y, r in lista]
-y = [int(y) for x, y, r in lista]
-r = [int(r) for x, y, r in lista]
+    if len(listaCores) and len(lista):
+        for cor, posicao in listaCores:
+            for circulo in lista:
+                distancia = np.array(posicao) - np.array(circulo)
+                distancia = np.linalg.norm(distancia)
 
-img = cv2.rectangle(img, (min(x) - 2*max(r), min(y) - 2*max(r)), (max(x) + 2*max(r), max(y) + 2*max(r)),
-                   (0, 0, 255), thickness=4)
+                if distancia < distanciaMinimaCores:
+                    print(f'SEMÁFORO {cor} DETECTADO!')
+                    return lista
+    return []
 
-cv2.imshow('Semaforo', img)
-cv2.waitKey(0)
+lista = reconhecerSemaforos(img)
+print(lista)
+
+if lista != []:
+    img = desenharCirculos(img, lista)
+    show(img)
