@@ -1,0 +1,1 @@
+Códigos referentes ao projeto de reconhecimento e comunicação de semáforos usando NodeMCU e OpenCV
