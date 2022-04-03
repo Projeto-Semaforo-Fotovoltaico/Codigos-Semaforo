@@ -2,9 +2,7 @@ import cv2
 import urllib.request
 import numpy as np
 
-url = 'http://192.168.68.110/cam-hi.jpg'
-
-def run1():
+def run(url):
     # CRIANDO UMA JANELA PADRÃO MESMO SEM RECEBER A IMAGEM
     cv2.namedWindow("WEB IMAGE", cv2.WINDOW_AUTOSIZE)
 
@@ -26,6 +24,4 @@ def run1():
 
     cv2.destroyAllWindows()
 
-
-
-run1()
+run('http://192.168.68.110/cam-hi.jpg')
