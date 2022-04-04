@@ -1,10 +1,34 @@
 import cv2
 import numpy as np
 
+
+# MOSTRANDO A IMAGEM PELO SEU OBJETO E ESPERANDO
 def show(img):
     cv2.imshow('imagem', img)
     cv2.waitKey(0)
 
+
+# DESENHANDO UM CÍRCULO E UM RETÂNGULO NAS COORDENADAS DO SEMÁFORO DETECTADO
+def desenharDetectados(img, detected):
+    if not len(detected):
+        return
+
+    for circulo in detected:
+        x, y, r = int(circulo[0]), int(circulo[1]), int(circulo[2])
+        cv2.circle(img, (x, y), r, (0, 255, 0), 2)
+
+    x = [int(x) for x, y, r in detected]
+    y = [int(y) for x, y, r in detected]
+    r = [int(r) for x, y, r in detected]
+
+    img = cv2.rectangle(img, (min(x) - 2 * max(r), min(y) - 2 * max(r)),
+                             (max(x) + 2 * max(r), max(y) + 2 * max(r)),
+                             (0, 0, 255), thickness=4)
+
+    return img
+
+
+# DETECTA APENAS OS CÍRCULOS COM CORES (NO INTERVALO ESPECIFICADO)
 def coresSemaforo(img):
     HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
@@ -55,45 +79,20 @@ def coresSemaforo(img):
     return listaCirculos
 
 
+# DETECTA TODOS OS CIRCULOS PRESENTES NA IMAGEM (DENTRO DOS LIMITES ESTABELECIDOS)
 def listaCirculos(img):
     gray_blurred = cv2.blur(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), (3, 3))
     detected = cv2.HoughCircles(gray_blurred, cv2.HOUGH_GRADIENT, dp=1, minDist=minDist,
                                 param1=param1, param2=param2, minRadius=minRadius, maxRadius=maxRadius)
 
-    if detected is not None:  # SE ALGUM CÍRCULO FOI ENCONTRADO
+    if detected is not None:            # SE ALGUM CÍRCULO FOI ENCONTRADO
         detected = np.around(detected)  # CONVERTENDO OS VALORES PARA INTEIRO
         return detected[0, :]
 
     return []
 
 
-def desenharCirculo(img, x, y, r):
-    # Draw the circumference of the circle.
-    cv2.circle(img, (x, y), r, (0, 255, 0), 2)
-
-    # Draw a small circle (of radius 1) to show the center.
-    cv2.circle(img, (x, y), 1, (0, 0, 255), 3)
-
-
-def desenharCirculos(img, detected):
-    if not len(detected):
-        return
-
-    for circulo in detected:
-        x, y, r = int(circulo[0]), int(circulo[1]), int(circulo[2])
-        desenharCirculo(img, x, y, r)
-
-    x = [int(x) for x, y, r in detected]
-    y = [int(y) for x, y, r in detected]
-    r = [int(r) for x, y, r in detected]
-
-    img = cv2.rectangle(img, (min(x) - 2 * max(r), min(y) - 2 * max(r)),
-                             (max(x) + 2 * max(r), max(y) + 2 * max(r)),
-                             (0, 0, 255), thickness=4)
-
-    return img
-
-
+# OBTENDO APENAS OS 3 CÍRCULOS COMPATÍVEIS COM AS REGRAS DE DETECÇÃO DO SEMÁFORO
 def processarCirculos(lista):
     for i in range(0, len(lista)):
         x1, y1, r1 = lista[i][0], lista[i][1], lista[i][2]
@@ -122,6 +121,7 @@ def processarCirculos(lista):
     return []
 
 
+# COMPARA O CÍRCULO COLORIDO COM OS 3 DETECTADOS DE UM POSSÍVEL SEMÁFORO
 def reconhecerSemaforos(img):
     lista = listaCirculos(img)          # TODOS OS CICRULOS
     lista = processarCirculos(lista)    # APENAS OS 3 CIRCULOS DENTRO DA CONFIANÇA
@@ -140,6 +140,7 @@ def reconhecerSemaforos(img):
     return []
 
 
+# VARIÁVEIS PARA ESTABELECER UM GRAU DE CONFIANÇA PARA DETECÇÃO DE CÍRCULOS
 def variaveisDeteccao():
     global minDist, param1, param2, minRadius, maxRadius
     global minX, maxX, minY, maxY, distanciaMaximaCores
@@ -155,6 +156,7 @@ def variaveisDeteccao():
     distanciaMaximaCores = 20  # DISTÂNCIA MÁXIMA PARA CÍCULO DETECTADO E UM CÍCRULO COM CORES
 
 
+# DIMINUINDO O GRAU DE CONFIANÇA PARA ENCONTRAR MAIS POSSÍVEIS CÍRCULO
 def diminuirConfianca():
     global minDist, param1, param2, minRadius, maxRadius
     global minX, maxX, minY, maxY, distanciaMaximaCores
@@ -184,6 +186,7 @@ def diminuirConfianca():
         distanciaMaximaCores += 5
 
 
+# CÓDIGO PRINCIPAL PARA ATIVAR O RECONHECIMENTO
 for c in range(1, 13):
     endereco = r'FotosSemaforo/Semaforo' + str(c) + '.png'
     print()
@@ -200,7 +203,7 @@ for c in range(1, 13):
 
         if lista:
             print(lista)
-            img = desenharCirculos(img, lista)
+            img = desenharDetectados(img, lista)
             show(img)
             break
 
