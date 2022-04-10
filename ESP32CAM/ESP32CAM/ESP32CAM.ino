@@ -2,8 +2,8 @@
 #include <WiFi.h>
 #include <esp32cam.h>
 
-const char* WIFI_SSID = "Leonan&Aline";
-const char* WIFI_PASS = "19021976";
+const char* WIFI_SSID = "livinhaaa";
+const char* WIFI_PASS = "alfaceetomate";
 
 WebServer server(80);
 
@@ -29,6 +29,7 @@ void handleBmp(){
     server.send(503, "", "");
     return;
   }
+  
   Serial.printf("CONVERT OK %dx%d %db\n", frame->getWidth(), frame->getHeight(),
                 static_cast<int>(frame->size()));
 

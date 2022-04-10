@@ -191,4 +191,4 @@ def run(url):
             print('Nada')
 
 
-run('http://192.168.68.110/cam-hi.jpg')
+run('http://192.168.151.170/cam-hi.jpg')

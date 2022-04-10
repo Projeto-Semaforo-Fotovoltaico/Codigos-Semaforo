@@ -54,13 +54,13 @@ def coresSemaforo(img):
     maskr = cv2.add(mask1, mask2)
 
     redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, 80,
-                                  param1=50, param2=10, minRadius=0, maxRadius=30)
+                                     param1=50, param2=10, minRadius=0, maxRadius=60)
 
     greenCircles = cv2.HoughCircles(maskg, cv2.HOUGH_GRADIENT, 1, 60,
-                                    param1=50, param2=10, minRadius=0, maxRadius=30)
+                                     param1=50, param2=10, minRadius=0, maxRadius=60)
 
     yellowCircles = cv2.HoughCircles(masky, cv2.HOUGH_GRADIENT, 1, 30,
-                                     param1=50, param2=5, minRadius=0, maxRadius=30)
+                                     param1=50, param2=5, minRadius=0, maxRadius=60)
 
     listaCirculos = []
 
@@ -145,14 +145,14 @@ def variaveisDeteccao():
     global minDist, param1, param2, minRadius, maxRadius
     global minX, maxX, minY, maxY, distanciaMaximaCores
 
-    minDist = 50    # DISTÂNCIA MÍNIMA ENTRE CÍRCULOS
+    minDist = 20    # DISTÂNCIA MÍNIMA ENTRE CÍRCULOS
     param1 = 50     # GRADIENTE PARA DETECÇÃO DE BORDA
     param2 = 20     # TOLERÂNCIA PARA CÍRCULOS DETECTADOS
-    minRadius = 20  # TAMANHO MÍNIMO DO RAIO DOS CÍRCULOS
+    minRadius = 10  # TAMANHO MÍNIMO DO RAIO DOS CÍRCULOS
     maxRadius = 30  # TAMANHO MÁXIMO DO RAIO DOS CÍRCULOS
 
     minX, maxX = 0, 10         # LIMITES HORIZONTAIS PARA DISTÂNCIA (VALIDAÇÃO)
-    minY, maxY = 50, 200       # LIMITES VERTICAIS PARA DISTÂNCIA (VALIDAÇÃO)
+    minY, maxY = 10, 200       # LIMITES VERTICAIS PARA DISTÂNCIA (VALIDAÇÃO)
     distanciaMaximaCores = 20  # DISTÂNCIA MÁXIMA PARA CÍCULO DETECTADO E UM CÍCRULO COM CORES
 
 
