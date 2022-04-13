@@ -67,7 +67,8 @@ def reconhecerVermelhos(img):
     return []
 
 
-def run(networkName, url, formato):
+# NOME DA REDE, URL PRA ATIVAR A CAMERA, URL PARA ATIVAR O COMANDO
+def run(networkName, url, comando):
     def conectarRede(networkName):
         os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
 
@@ -80,7 +81,9 @@ def run(networkName, url, formato):
     conectarRede(networkName)
     while True:
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
-        WEBinfo = urllib.request.urlopen(url + formato)
+        WEBinfo = requisicao(url)
+        if not WEBinfo:
+            continue
 
         # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
         img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
@@ -90,10 +93,10 @@ def run(networkName, url, formato):
         if len(vermelhos):
             print('SEMÁFORO VERMELHO DETECTADO!')
 
-            req = requisicao(url + 'ATIVAR')
+            req = requisicao(comando)
             if req:
                 print('ATIVANDO')
                 sleep(1)
 
 
-run('ProjetoSemaforo', 'http://192.168.4.1/', 'cam-hi.jpg')
+run('ProjetoSemaforo', 'http://192.168.4.3/cam-hi.jpg', 'http://192.168.4.1/ATIVAR')

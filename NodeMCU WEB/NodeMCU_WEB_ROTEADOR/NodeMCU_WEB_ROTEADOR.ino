@@ -16,7 +16,7 @@ void tcpCleanup(){
 
 // CRIANDO E INICIANDO O ROTEADOR LOCAL
 void startServer(char* nome, char* senha){
-  IPAddress staticIP(192, 168, 4, 2);  // IP ESTÁTICO
+  IPAddress staticIP(192, 168, 4, 3);  // IP ESTÁTICO
   IPAddress gateway(192, 168, 4, 1);   // GATEWAY ESTÁTICO IP
   IPAddress subnet(255, 255, 255, 0);  // OCULTAR SUB REDE
 
@@ -70,7 +70,9 @@ void loop() {
   if(requisicao.indexOf("ATIVAR") != -1){
      Serial.print(F("ATIVANDO O LED!\n"));
      ESTADO = !ESTADO;
-     digitalWrite(LED_BUILTIN, ESTADO);
+     digitalWrite(LED, HIGH);
+     delay(1000);
+     digitalWrite(LED, LOW);
   }
 
   client.flush();

@@ -2,9 +2,8 @@ import cv2
 import urllib.request
 import numpy as np
 import os
+import requests
 
-
-# ESCONDENDO O CONSOLE
 def hideTerminal():
     import win32gui, win32con
     the_program_to_hide = win32gui.GetForegroundWindow()
@@ -21,7 +20,10 @@ def run(url):
 
     while True:
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
-        WEBinfo = urllib.request.urlopen(url)
+        try:
+            WEBinfo = urllib.request.urlopen(url)
+        except:
+            continue
 
         # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
         img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
@@ -40,4 +42,4 @@ def run(url):
 
 hideTerminal()
 conectarRede('ProjetoSemaforo')
-run('http://192.168.4.1/cam-hi.jpg')
+run('http://192.168.4.3/cam-hi.jpg')
