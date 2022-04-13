@@ -1,65 +1,107 @@
-//Enviar e Receber dados - via Wifi - Ponto de acesso
-
+#include <lwip/priv/tcp_priv.h>
 #include <ESP8266WiFi.h>
 
-
-const char* ssid = "Projeto_Semaforo";
-const char* password = "12345678";
 WiFiServer server(80);
+#define LED 14
 
-void setup() {
-  //Configuracao
-  Serial.begin(9600); 
-  
-  IPAddress staticIP(192, 168, 4, 2); // IP estatico
-  IPAddress gateway(192, 168, 4, 1);  // gateway estatico IP
-  IPAddress subnet(255, 255, 255, 0); // Ocultar sub rede
+bool ESTADO = 0;
+void paginaHTML(WiFiClient *cl);
 
-  WiFi.mode(WIFI_AP);// Modo de trabalho via Access Point 
 
-  WiFi.softAP(ssid, password, 2, 0);
+// LIMPANDO MEMÓRIA FLASH
+void tcpCleanup(){
+  while (tcp_tw_pcbs != NULL)
+    tcp_abort(tcp_tw_pcbs);
+}
+
+// CRIANDO E INICIANDO O ROTEADOR LOCAL
+void startServer(char* nome, char* senha){
+  IPAddress staticIP(192, 168, 4, 2);  // IP ESTÁTICO
+  IPAddress gateway(192, 168, 4, 1);   // GATEWAY ESTÁTICO IP
+  IPAddress subnet(255, 255, 255, 0);  // OCULTAR SUB REDE
+
+  // MODO DE TRABALHO WIFI VIA ACESS POINT
+  WiFi.mode(WIFI_AP);                 
+  WiFi.softAP(nome, senha, 2, 0);
   WiFi.config(staticIP, gateway, subnet);
 
-  server.begin(); //Incializacao do servidor
-
-  Serial.println("Server started"); 
+  // INICIALIZANDO O SERVIDOR E IMPRIMINDO INFORMAÇÕES
+  server.begin(); 
+  Serial.println("SERVER STARTED!"); 
   Serial.println(WiFi.softAPIP());
 }
-//Criando rotina 
+
+
+// ESTABELECENDO A COMUNICAÇÃO WIFI E MONITOR SERIAL
+void setup() {
+  Serial.begin(9600); 
+  startServer("ProjetoSemaforo", "12345678");
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED, OUTPUT);
+
+  digitalWrite(LED_BUILTIN, LOW);
+}
+
+
+// FUNÇÃO PRINCIPAL DO PROGRAMA
 void loop() {
+  tcpCleanup();
   WiFiClient client = server.available();
-  if (!client) {
-    return;
-  }
 
-  //Enquanto nao enviar o comando
-  while (!client.available()) {
+  // ENQUANTO NÃO FOR CONECTADO NO SERVIDOR CLIENTE
+  if (!client)
+    return;
+
+  // ENQUANTO NÃO FOR RECEBIDA NENHUMA REQUISIÇÃO
+  while (!client.available())
     delay(1);
+  
+  // LENDO A REQUISIÇÃO RECEBIDA
+  String requisicao = client.readStringUntil('\r');
+  Serial.print(F("REQUISICAO: "));
+  Serial.println(requisicao); 
+
+  if(requisicao.indexOf("/") != -1){
+     Serial.print(F("MONTANDO PÁGINA HTML!\n"));
+     paginaHTML(&client);
   }
-  //Lendo o comando
-  String req = client.readStringUntil('\r');
-  req = req.substring(req.indexOf("/") + 1, req.indexOf("HTTP") - 1);
-  Serial.println(req);
+    
+  if(requisicao.indexOf("ATIVAR") != -1){
+     Serial.print(F("ATIVANDO O LED!\n"));
+     ESTADO = !ESTADO;
+     digitalWrite(LED_BUILTIN, ESTADO);
+  }
+
   client.flush();
+  client.stop();
+  delay(1);
+  tcpCleanup();
+}
 
-  // Executando a tarefa pretendida - abaixo um exemplo -  
 
-  if (req.indexOf("D") != -1)
-  {
-    client.print("REcebido seu dado D   ");
-  }
-  else if (req.indexOf("R") != -1)
-  {
-    client.print("REcebido seu dado R   ");
-  }  
-  else {
-    client.print("Invalid Request");
-    client.flush();
-    client.stop();
-    return;
-  }
+// MONTANDO A PÁGINA HTML PELO ENDEREÇO DE MEMÓRIA DO SERVIDOR CLIENTE
+void paginaHTML(WiFiClient *cl){
+    (*cl).println("HTTP/1.1 200 OK");
+    (*cl).println("Content-Type: text/html");
+    (*cl).println("Connection: keep-alive");  
+    (*cl).println();
+    
+    (*cl).println("<!DOCTYPE html>");
+    (*cl).println("<html>");
+   
+    (*cl).println("<head>");
+    (*cl).println("<title>ESP8266 via WEB</title>");
+    (*cl).println("</head>");
 
-  client.print("HTTP/1.1 200 OK\n\n");
-  client.flush();
+    (*cl).println("<body>");
+    (*cl).print("<p>GPIO is now ");
+    
+    if (ESTADO)
+        (*cl).println("HIGH</p>");
+    else
+        (*cl).println("LOW</p>");
 
+    (*cl).println("</body>");
+    (*cl).println("</html>");
 }

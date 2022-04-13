@@ -1,0 +1,4 @@
+lower_red1 = np.array([0, 100, minVerm])
+upper_red1 = np.array([10, 220, 255])  # green estava em 255
+lower_red2 = np.array([160, 100, minVerm])
+upper_red2 = np.array([179, 220, 255])  # green estava em 255
