@@ -1,1 +1,5 @@
-https://dl.espressif.com/dl/package_esp32_index.json
+Arquivo -> Preferências -> Cole o Link -> URLs Adicionais (cole o link)
+	https://dl.espressif.com/dl/package_esp32_index.json
+
+Ferramentas -> Placa -> Gerenciador de Placas -> ESP32 (pesquisar) -> Instalar
+Agora Selecione a Placa desejada

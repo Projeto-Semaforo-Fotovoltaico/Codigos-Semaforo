@@ -26,9 +26,9 @@ def desenharCirculos(img, detected):
 
 
 def validar(img, redCircles):
-    #profundidadeLimite = int(img.shape[0]/2) # METADE DA FIGURA
+    profundidadeLimite = int(img.shape[0]/2) # METADE DA FIGURA
 
-    #largura = img.shape[1]
+    largura = img.shape[1]
     #cv2.line(img, (0, profundidadeLimite), (largura, profundidadeLimite), (0, 255, 255), thickness=3)
 
     if type(redCircles).__module__ == np.__name__:
@@ -42,28 +42,19 @@ def validar(img, redCircles):
 def reconhecerVermelhos(img):
     HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    minVerm = 254
-    while minVerm != 120:
-        lower_red1 = np.array([0, 70, minVerm])
-        upper_red1 = np.array([10, 220, 255])  # green estava em 255
-        lower_red2 = np.array([170, 70, minVerm])
-        upper_red2 = np.array([180, 220, 255])  # green estava em 255
+    low = np.array([170, 150, 100])
+    high = np.array([180, 220, 190])
+    maskr = cv2.inRange(HSV, low, high)
 
-        # DESTACANDO OS TONS DE VERMELHO (USANDO DOIS INTERVALOS DESEJADOS)
-        mask1 = cv2.inRange(HSV, lower_red1, upper_red1)
-        mask2 = cv2.inRange(HSV, lower_red2, upper_red2)
-        maskr = cv2.add(mask1, mask2)
+    redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
+                                     param1=50, param2=10, minRadius=5, maxRadius=300)
 
-        redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, 80,
-                                         param1=50, param2=15, minRadius=5, maxRadius=60)
+    lista = validar(img, redCircles)
+    show(maskr)
 
-        lista = validar(img, redCircles)
+    if len(lista):
+        return lista
 
-        if len(lista):
-            print(minVerm)
-            return lista
-
-        minVerm -= 1
     return []
 
 
@@ -99,4 +90,4 @@ def run(networkName, url, comando):
                 sleep(1)
 
 
-run('ProjetoSemaforo', 'http://192.168.4.3/cam-hi.jpg', 'http://192.168.4.1/ATIVAR')
+run('ProjetoSemaforo', 'http://192.168.4.2/cam-hi.jpg', 'http://192.168.4.1/ATIVAR')

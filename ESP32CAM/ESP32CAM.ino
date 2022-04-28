@@ -4,10 +4,6 @@
 
 const char* WIFI_SSID = "ProjetoSemaforo";
 const char* WIFI_PASS = "12345678";
-
-//const char* WIFI_SSID = "livinhaaa";
-//const char* WIFI_PASS = "alfaceetomate";
-
 WebServer server(80);
 
 static auto loRes = esp32cam::Resolution::find(320, 240);
@@ -137,10 +133,7 @@ void setup(){
 // CASO DESCONECTE COM A REDE, FAÇA A RECONEXÃO
 void reconectarRede(void){
   if ((WiFi.status() != WL_CONNECTED)) {
-      Serial.print(millis());
-      Serial.print(F("Reconnecting to WiFi...\n"));
-      WiFi.disconnect();
-      WiFi.reconnect();
+      ESP.restart();
     }
 }
 

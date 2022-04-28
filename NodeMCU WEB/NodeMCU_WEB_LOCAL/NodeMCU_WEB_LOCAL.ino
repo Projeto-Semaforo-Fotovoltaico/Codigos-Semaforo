@@ -1,18 +1,12 @@
 // BIBLIOTECAS UTILIZADAS NESTE CÓDIGO
 #include <ESP8266WiFi.h>
 
-#define PINO_DIGITAL   2
-bool ESTADO = 1;
+#define PINO_DIGITAL  2
+bool ESTADO = 0;
 
 // PORTA PADRÃO PARA O SHIELD RECEBER AS REQUISIÇÕES DAS PÁGINAS
 WiFiServer server(80);
 void paginaHTML(WiFiClient *cl);
-
-
-// TABELA DA VERDADE CRIADA PARA A PASSAGEM DOS PEDESTRES
-bool statusPassagem(bool R, bool Y, bool G){
-  return R*!Y*!G;
-}
 
 
 // CONECTANDO À REDE LOCAL PELO NOME E SENHA
@@ -31,16 +25,16 @@ void conectarRede(char* nomeRede, char* senhaRede){
 
 // EXIBINDO INFORMAÇÕES DA REDE CONECTADA
 void exibirInformacoes(){
-    Serial.print(F("\n"));
+    Serial.print("\n");
     
     if (WiFi.status() == WL_CONNECTED)
-        Serial.print(F("WIFI CONECTADO!\n"));
+        Serial.println("WIFI CONECTADO!");
     else
-        Serial.print(F("WIFI NÃO CONECTADO!\n"));
+        Serial.println("WIFI NÃO CONECTADO!");
   
-    Serial.print(F("ENDERECOIP: "));
+    Serial.print("ENDERECOIP: ");
     Serial.print(WiFi.localIP());
-    Serial.print(F("\n"));
+    Serial.print("\n");
 }
 
 
@@ -48,7 +42,7 @@ void exibirInformacoes(){
 void reconectarRede(void){
   if ((WiFi.status() != WL_CONNECTED)) {
       Serial.print(millis());
-      Serial.print(F("Reconnecting to WiFi...\n"));
+      Serial.printkb("Reconnecting to WiFi...");
       WiFi.disconnect();
       WiFi.reconnect();
     }
@@ -73,7 +67,6 @@ void setup(){
 void loop(){
     reconectarRede();
     WiFiClient client = server.available();
-    digitalWrite(PINO_DIGITAL, ESTADO);
 
     // LOOP INFINITO ENQUANTO O SERVIDOR CLIENTE NÃO FOR CONECTADO
     if (!client)
@@ -84,17 +77,18 @@ void loop(){
       delay(1);
     
     String requisicao = client.readStringUntil('\r');
-    Serial.print(F("REQUISICAO: "));
+    Serial.print("REQUISICAO: ");
     Serial.println(requisicao); 
 
 
     if(requisicao.indexOf("/") != -1){
-        Serial.print(F("MONTANDO PÁGINA HTML!\n"));
+        Serial.println("MONTANDO PÁGINA HTML!");
     }
     
     if(requisicao.indexOf("POST") != -1){
-        Serial.print(F("ATIVANDO O BOTAO!\n"));
+        Serial.println("ATIVANDO O BOTAO!");
         ESTADO = !ESTADO;
+        digitalWrite(PINO_DIGITAL, ESTADO);
     }
 
     paginaHTML(&client);
