@@ -1,7 +1,10 @@
 import urllib.request, os, cv2
 import numpy as np
 from time import sleep
+from time import time
 
+i = 0
+tempoI = time()
 
 # MOSTRANDO A IMAGEM PELO SEU OBJETO E ESPERANDO
 def show(img):
@@ -25,19 +28,6 @@ def desenharCirculos(img, detected):
     return img
 
 
-def validar(img, redCircles):
-    profundidadeLimite = int(img.shape[0]/2) # METADE DA FIGURA
-
-    largura = img.shape[1]
-    #cv2.line(img, (0, profundidadeLimite), (largura, profundidadeLimite), (0, 255, 255), thickness=3)
-
-    if type(redCircles).__module__ == np.__name__:
-        for coordenadas in redCircles[0]:
-            #if coordenadas[1] <= profundidadeLimite:
-            return coordenadas
-    return []
-
-
 # RECONHECENDO O CÍRCULO MAIS VERMELHOS PRESENTE EM UMA IMAGEM
 def reconhecerVermelhos(img):
     HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -49,13 +39,10 @@ def reconhecerVermelhos(img):
     redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
                                      param1=50, param2=10, minRadius=5, maxRadius=300)
 
-    lista = validar(img, redCircles)
-    show(maskr)
+    if type(redCircles).__module__ == np.__name__:
+        return True
 
-    if len(lista):
-        return lista
-
-    return []
+    return False
 
 
 # NOME DA REDE, URL PRA ATIVAR A CAMERA, URL PARA ATIVAR O COMANDO
@@ -81,13 +68,12 @@ def run(networkName, url, comando):
         img = cv2.imdecode(img, -1)
         vermelhos = reconhecerVermelhos(img)
 
-        if len(vermelhos):
+        if vermelhos:
             print('SEMÁFORO VERMELHO DETECTADO!')
+            requisicao(comando + 'ATIVAR')
+        else:
+            print('SEMÁFORO VERMELHO NÃO DETECTADO!')
+            requisicao(comando + 'DESATIVAR')
 
-            req = requisicao(comando)
-            if req:
-                print('ATIVANDO')
-                sleep(1)
 
-
-run('ProjetoSemaforo', 'http://192.168.4.2/cam-hi.jpg', 'http://192.168.4.1/ATIVAR')
+run('ProjetoSemaforo', 'http://192.168.4.2/cam-hi.jpg', 'http://192.168.4.1/')
