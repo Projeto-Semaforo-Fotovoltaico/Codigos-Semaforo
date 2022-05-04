@@ -83,11 +83,8 @@ void setup() {
   
     pinMode(LED_BUILTIN, OUTPUT);
     pinMode(LED, OUTPUT);
-  
-    digitalWrite(LED, HIGH);
-    delay(2000);
-    digitalWrite(LED, LOW);
 
+    digitalWrite(LED_BUILTIN, LOW);
     zeraVetor(vetor);
 }
 
