@@ -76,4 +76,4 @@ def run(networkName, url, comando):
             requisicao(comando + 'DESATIVAR')
 
 
-run('ProjetoSemaforo', 'http://192.168.4.2/cam-hi.jpg', 'http://192.168.4.1/')
+run('ProjetoSemaforo', 'http://192.168.4.3/cam-hi.jpg', 'http://192.168.4.1/')

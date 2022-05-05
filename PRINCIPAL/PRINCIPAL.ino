@@ -3,7 +3,7 @@
 
 WiFiServer server(80);
 #define LED 14
-#define MAX 10
+#define MAX 6
 
 bool vetor[MAX];
 int i = 0;
