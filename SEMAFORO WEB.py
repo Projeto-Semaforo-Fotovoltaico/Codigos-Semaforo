@@ -60,13 +60,19 @@ def run(networkName, url, comando):
     while True:
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
         WEBinfo = requisicao(url)
+
         if not WEBinfo:
+            print('Sem Resposta')
             continue
 
-        # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
-        img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
-        img = cv2.imdecode(img, -1)
-        vermelhos = reconhecerVermelhos(img)
+        try:
+            # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
+            img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
+            img = cv2.imdecode(img, -1)
+            vermelhos = reconhecerVermelhos(img)
+        except Exception:
+            print('Erro ao passar imagem para Array!')
+            continue
 
         if vermelhos:
             print('SEMÁFORO VERMELHO DETECTADO!')

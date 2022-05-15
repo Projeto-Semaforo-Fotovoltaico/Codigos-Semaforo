@@ -2,7 +2,7 @@ import cv2
 import urllib.request
 import numpy as np
 import os
-import requests
+
 
 def hideTerminal():
     import win32gui, win32con
