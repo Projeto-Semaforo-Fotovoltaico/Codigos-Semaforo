@@ -6,7 +6,6 @@
 // INICIANDO O OBJETO PARA SERVIDOR LOCAL DO ROTEADOR
 WebServer server(80);
 
-
 // CONFIGURAÇÃO DAS RESOLUÇÕES
 static auto loRes = esp32cam::Resolution::find(320, 240);
 static auto hiRes = esp32cam::Resolution::find(800, 600);
@@ -33,7 +32,7 @@ void startServer(char *nome, char *senha){
   WiFi.begin(nome, senha);
 
   // (OPCIONAL) CONFIGURAÇÕES SECUNDÁRIAS DO SERVIDOR LOCAL
-  IPAddress staticIP(192, 168, 4, 3);     // IP ESTÁTICO (USADO PARA EXTRAIR AS IMAGENS)
+  IPAddress staticIP(192, 168, 4, 4);     // IP ESTÁTICO (USADO PARA EXTRAIR AS IMAGENS)
   IPAddress gateway(192, 168, 4, 2);      // GATEWAY ESTÁTICO IP 
   IPAddress subnet(255, 255, 255, 0);     // OCULTAR SUB REDE
   WiFi.config(staticIP, gateway, subnet);
@@ -124,10 +123,11 @@ void handleBmp(){
 void serveJpg(){
     auto frame = esp32cam::capture();
     if (frame == nullptr) {
-      Serial.println("CAPTURE FAIL");
-      server.send(503, "", "");
-      return;
+        Serial.println("CAPTURE FAIL");
+        server.send(503, "", "");
+        return;
     }
+    
     Serial.printf("CAPTURE OK %dx%d %db\n", frame->getWidth(), frame->getHeight(),
                   static_cast<int>(frame->size()));
   
@@ -145,6 +145,7 @@ void handleJpgLo(){
     }
     serveJpg();
 }
+
 
 // RECEBIMENTO DE UMA REQUISIÇÃO PARA ENVIAR UM ARQUIVO JPG
 void handleJpgHi(){

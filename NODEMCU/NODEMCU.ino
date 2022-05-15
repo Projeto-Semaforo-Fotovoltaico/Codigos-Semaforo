@@ -67,16 +67,14 @@ void processaRequisicao(String requisicao){
     if(i == MAX - 1){
         float media = mediaVetor(vetor);
         
-        if(media > 0.5){
-            ESTADO = LOW;
-            digitalWrite(LED, LOW);  // INVERTIDO POR CAUSA DO RELÉ
-        }else{
+        if(media > 0.5)
             ESTADO = HIGH;
-            digitalWrite(LED, HIGH); // INVERTIDO POR CAUSA DO RELÉ
-        }
+        else
+            ESTADO = LOW;
         
         i = 0;
         zeraVetor(vetor);
+        digitalWrite(LED, ESTADO);
     }
 }
 
