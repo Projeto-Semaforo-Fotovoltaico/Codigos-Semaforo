@@ -1,31 +1,6 @@
 import urllib.request, os, cv2
 import numpy as np
 from time import sleep
-from time import time
-
-i = 0
-tempoI = time()
-
-# MOSTRANDO A IMAGEM PELO SEU OBJETO E ESPERANDO
-def show(img):
-    img = cv2.resize(img, (800, 600), interpolation=cv2.INTER_CUBIC)
-    cv2.imshow('imagem', img)
-    cv2.waitKey(0)
-
-
-# DESENHANDO OS CÍRCULOS EM UMA LISTA DE COORDENADAS
-def desenharCirculos(img, detected):
-    if not len(detected):
-        return
-
-    x, y, r = int(detected[0]), int(detected[1]), int(detected[2])
-
-    img = cv2.circle(img, (x, y), r, (0, 255, 0), 2)
-
-    img = cv2.rectangle(img, (x - 3 * r, y - 3 * r),
-                             (x + 3 * r, y + 3 * r),
-                             (0, 0, 255), thickness=4)
-    return img
 
 
 # RECONHECENDO O CÍRCULO MAIS VERMELHOS PRESENTE EM UMA IMAGEM
@@ -46,7 +21,9 @@ def reconhecerVermelhos(img):
 
 
 # NOME DA REDE, URL PRA ATIVAR A CAMERA, URL PARA ATIVAR O COMANDO
-def run(networkName, url, comando):
+def run(networkName, urlCamera, urlNode1, urlNode2):
+    vermelhos = False
+
     def conectarRede(networkName):
         os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
 
@@ -59,10 +36,11 @@ def run(networkName, url, comando):
     conectarRede(networkName)
     while True:
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
-        WEBinfo = requisicao(url)
+        WEBinfo = requisicao(urlCamera)
 
         if not WEBinfo:
             print('Sem Resposta')
+            sleep(0.5)
             continue
 
         try:
@@ -76,10 +54,12 @@ def run(networkName, url, comando):
 
         if vermelhos:
             print('SEMÁFORO VERMELHO DETECTADO!')
-            requisicao(comando + 'ATIVAR')
+            requisicao(urlNode1 + 'ATIVAR')
+            requisicao(urlNode2 + 'ATIVAR')
         else:
             print('SEMÁFORO VERMELHO NÃO DETECTADO!')
-            requisicao(comando + 'DESATIVAR')
+            requisicao(urlNode1 + 'DESATIVAR')
+            requisicao(urlNode2 + 'DESATIVAR')
 
 
-run('ProjetoSemaforo', 'http://192.168.4.4/cam-hi.jpg', 'http://192.168.4.1/')
+run('ProjetoSemaforo', 'http://192.168.4.4/cam-hi.jpg', 'http://192.168.4.1/', 'http://192.168.4.3/')

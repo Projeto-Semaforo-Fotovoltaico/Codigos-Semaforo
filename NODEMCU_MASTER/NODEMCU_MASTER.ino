@@ -1,4 +1,11 @@
 #include <lwip/priv/tcp_priv.h>
+
+// LIMPANDO MEMÓRIA FLASH
+void tcpCleanup(){
+  while (tcp_tw_pcbs != NULL)
+    tcp_abort(tcp_tw_pcbs);
+}
+
 #include <ESP8266WiFi.h>
 
 WiFiServer server(80);
@@ -8,14 +15,7 @@ WiFiServer server(80);
 bool ESTADO = LOW;
 bool vetor[MAX];
 int i = 0;
-
-
-// LIMPANDO MEMÓRIA FLASH
-void tcpCleanup(){
-  while (tcp_tw_pcbs != NULL)
-    tcp_abort(tcp_tw_pcbs);
-}
-
+void paginaHTML(WiFiClient *cl);
 
 // CRIANDO E INICIANDO O ROTEADOR LOCAL
 void startServer(char* nome, char* senha){
