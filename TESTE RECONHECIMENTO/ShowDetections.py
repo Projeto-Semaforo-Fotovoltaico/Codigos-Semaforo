@@ -4,7 +4,7 @@ import numpy as np
 
 # MOSTRANDO A IMAGEM PELO SEU OBJETO E ESPERANDO
 def show(img):
-    img = cv2.resize(img, (800, 600), interpolation=cv2.INTER_CUBIC)
+    #img = cv2.resize(img, (800, 600), interpolation=cv2.INTER_CUBIC)
     cv2.imshow('imagem', img)
     cv2.waitKey(0)
 
@@ -16,25 +16,12 @@ def desenharCirculos(img, detected):
 
     x, y, r = int(detected[0]), int(detected[1]), int(detected[2])
 
-    img = cv2.circle(img, (x, y), r, (0, 255, 0), 2)
+    img = cv2.circle(img, (x, y), r, (0, 255, 0), 5)
 
-    img = cv2.rectangle(img, (x - 3 * r, y - 3 * r),
-                             (x + 3 * r, y + 3 * r),
-                             (0, 0, 255), thickness=4)
+    img = cv2.rectangle(img, (x - 1 * r, y - 1 * r),
+                             (x + 1 * r, y + 1 * r),
+                             (0, 0, 255), thickness=6)
     return img
-
-
-def validar(img, redCircles):
-    profundidadeLimite = int(img.shape[0]/2) # METADE DA FIGURA
-
-    largura = img.shape[1]
-    #cv2.line(img, (0, profundidadeLimite), (largura, profundidadeLimite), (0, 255, 255), thickness=3)
-
-    if type(redCircles).__module__ == np.__name__:
-        for coordenadas in redCircles[0]:
-            #if coordenadas[1] <= profundidadeLimite:
-            return coordenadas
-    return []
 
 
 # RECONHECENDO O CÍRCULO MAIS VERMELHOS PRESENTE EM UMA IMAGEM
@@ -48,15 +35,30 @@ def reconhecerVermelhos(img):
     redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
                                      param1=50, param2=10, minRadius=5, maxRadius=300)
 
-    lista = validar(img, redCircles)
     #show(maskr)
-
-    if len(lista):
-        return lista
+    if type(redCircles).__module__ == np.__name__:
+        for circulo in redCircles:
+            return circulo[0]
 
     return []
 
 
+# VERIFICANDO SE O SINAL ESTÁ ACIMA DA MENOR ALTURA ACEITA
+def validarAltura(img, redCircles):
+    largura, altura = img.shape[1], img.shape[0]
+
+    profundidadeLimite = int(altura/2)
+    cv2.line(img, (0, profundidadeLimite), (largura, profundidadeLimite), (0, 255, 255), thickness=3)
+
+    for coordenadas in redCircles[0]:
+        if coordenadas[1] <= profundidadeLimite:
+            print(coordenadas)
+            return True
+
+    return False
+
+
+# RETORNA O ENDEREÇO TODOS OS ARQUIVOS EM UM ENDEREÇO
 def allFiles(endereco):
     arquivos = []
     for caminhoDiretorio, nomeDiretorio, nomeArquivo in os.walk(endereco):
@@ -69,6 +71,7 @@ def allFiles(endereco):
     return arquivos
 
 
+# EXIBE TODAS AS FOTOS ENCONTRADAS EM UM ENDEREÇO
 def fotos(endereco):
     imagens = allFiles(endereco)
 
@@ -85,6 +88,7 @@ def fotos(endereco):
         print()
 
 
+# EXIBE E IDENTIFICA SINAIS VERMELHOS EM UM VÍDEO
 def video(endereco):
     cap = cv2.VideoCapture(endereco)
 
@@ -105,16 +109,13 @@ def video(endereco):
 
             if cv2.waitKey(25) & 0xFF == ord('q'):
               break
-
         else:
             break
 
     cap.release()
-
-    # Closes all the frames
     cv2.destroyAllWindows()
 
 
-#fotos('FotosSemaforo')
+fotos('FotosSemaforo')
 #fotos('Teste')
-video('Video.mp4')
+#video('Video.mp4')
