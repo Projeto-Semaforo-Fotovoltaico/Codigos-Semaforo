@@ -2,6 +2,7 @@ import cv2
 import urllib.request
 import numpy as np
 import os
+from time import sleep
 
 
 def hideTerminal():
@@ -22,16 +23,18 @@ def run(url):
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
         try:
             WEBinfo = urllib.request.urlopen(url)
-        except:
-            continue
 
-        # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
-        img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
-        img = cv2.imdecode(img, -1)
+            # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
+            img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
+            img = cv2.imdecode(img, -1)
+        except:
+            print('sem leitura')
+            sleep(0.5)
+            continue
 
         # MOSTRANDO A IMAGEM
         cv2.imshow('WEB IMAGE', img)
-        key = cv2.waitKey(5)
+        key = cv2.waitKey(1)
 
         # SAINDO SE A TECLA 'q' FOR PRESSIONADA
         if key == ord('q'):

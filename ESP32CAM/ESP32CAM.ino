@@ -37,8 +37,12 @@ void startServer(char *nome, char *senha){
   IPAddress subnet(255, 255, 255, 0);     // OCULTAR SUB REDE
   WiFi.config(staticIP, gateway, subnet);
   
-  while (WiFi.status() != WL_CONNECTED) 
+  while (WiFi.status() != WL_CONNECTED){
+    Serial.print(".");
     delay(500);
+  }
+
+  Serial.println();
 }
 
 
@@ -56,8 +60,10 @@ void exibirInformacoes(){
 
 // CASO DESCONECTE COM A REDE, FAÇA A RECONEXÃO
 void reconectarRede(void){
-  if ((WiFi.status() != WL_CONNECTED))
-      ESP.restart();
+  if ((WiFi.status() != WL_CONNECTED)){
+      delay(1000);
+      WiFi.reconnect();
+  }
 }
 
 

@@ -10,11 +10,8 @@ void tcpCleanup(){
 
 WiFiServer server(80);
 #define LED 14
-#define MAX 5
 
 bool ESTADO = LOW;
-bool vetor[MAX];
-int i = 0;
 void paginaHTML(WiFiClient *cl);
 
 
@@ -53,47 +50,18 @@ void exibirInformacoes(){
 }
 
 
-// CALCULANDO A MÉDIA DE UM VETOR DE TAMANHO MAX
-float mediaVetor(bool vetor[]){
-    float soma = 0;
-    
-    for(byte x=0; x<MAX; x++)
-        soma += (float) vetor[x];
-  
-    return soma/MAX;
-}
-
-
-// ZERANDO TODAS AS COMPONENTES DE UM VETOR DE TAMANHO MAX
-void zeraVetor(bool *vetor){
-    for(byte x=0; x<MAX; x++)
-        vetor[x] = 0;
-}
-
-
 // PROCESSANDO A REQUISIÇÃO RECEBIDA PARA ACENDER OS LEDS
 void processaRequisicao(String requisicao){
     Serial.print(F("REQUISICAO: "));
     Serial.println(requisicao);
     
     if(requisicao.indexOf("ATIVAR") != -1)
-        vetor[i] = 1;
+        ESTADO = HIGH;
   
     if(requisicao.indexOf("DESATIVAR") != -1)
-        vetor[i] = 0;
-  
-    if(i == MAX - 1){
-        float media = mediaVetor(vetor);
-        
-        if(media > 0.5)
-            ESTADO = HIGH;
-        else
-            ESTADO = LOW;
-        
-        i = 0;
-        zeraVetor(vetor);
-        digitalWrite(LED, ESTADO);
-    }
+        ESTADO = LOW;
+
+    digitalWrite(LED, ESTADO);
 }
 
 
@@ -109,7 +77,7 @@ void setup() {
     pinMode(LED, OUTPUT);
 
     digitalWrite(LED_BUILTIN, LOW);
-    zeraVetor(vetor);
+    digitalWrite(LED, ESTADO);
 }
 
 
@@ -133,7 +101,6 @@ void loop() {
       paginaHTML(&client);
     
     processaRequisicao(requisicao);
-    i++;
     
     client.flush();
     client.stop();
