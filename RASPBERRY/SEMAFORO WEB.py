@@ -30,12 +30,12 @@ def reconhecerVermelhos(img):
 
 # NOME DA REDE, URL PRA ATIVAR A CAMERA, URL PARA ATIVAR O COMANDO
 def run(networkName, urlCamera, urlNode1, urlNode2):
-    MAX = 5
-    vermelhos = False
-    vetor = np.zeros(MAX)
-    utlimaAtualizacao = time()
-    i = 0
-    x = 0
+    MAX = 5                         # TAMANHO DO VETOR DE DETECÇÕES
+    vermelhos = False               # VARIÁVEL DE DETECÇÃO DO SINAL
+    vetor = np.zeros(MAX)           # VETOR DE DETECÇÕES
+    utlimaAtualizacao = time()      # VARIÁVEL PARA SINCRONIZAÇÃO DO SINAL
+    i = 0                           # VARIÁVEL PARA PREENCHER VETOR
+    x = 0                           # VARIÁVEL PARA DETECTAR PROBLEMAS DE LEITURA
 
     def conectarRede(networkName):
         os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
@@ -57,32 +57,23 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
             vetor[i] = 0
 
         i = i + 1
-        
         if i < MAX:
             return 1
             
-        if i == MAX:
-            i = 0
-            
-            if np.mean(vetor) > 0.5:
-                vetor.fill(0)
-                return 2
-            
-            if np.mean(vetor) < 0.5:
-                vetor.fill(0)
-                return 3
+        i = 0
+        if np.mean(vetor) > 0.5:
+            vetor.fill(0)
+            return 2
+        
+        if np.mean(vetor) < 0.5:
+            vetor.fill(0)
+            return 3
 
 
     conectarRede(networkName)
     while True:
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
         WEBinfo = requisicao(urlCamera + 'cam-hi.jpg')
-
-        if x == 10:
-            print('Resetando ESP')
-            requisicao(urlCamera + 'RESET')
-            x = 0
-            sleep(10)
 
         if not WEBinfo:
             print('Sem Resposta')
@@ -91,10 +82,12 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
             continue
 
         try:
-            # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
             tempo = time()
+
+            # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
             img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
-            print('TEMPO PARA LEITURA: ', time() - tempo, '\n')
+
+            print('TEMPO PARA LEITURA DA IMAGEM: ', time() - tempo, '\n')
 
             img = cv2.imdecode(img, -1)
             vermelhos = reconhecerVermelhos(img)
@@ -116,6 +109,12 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
             print('DESATIVANDO RELÉ')
             requisicao(urlNode1 + 'DESATIVAR')
             requisicao(urlNode2 + 'DESATIVAR')
+
+        if x == 10:
+            print('Resetando ESP')
+            requisicao(urlCamera + 'RESET')
+            x = 0
+            sleep(10)
 
         sleep(0.01)
 
