@@ -58,11 +58,18 @@ void exibirInformacoes(){
 }
 
 
+// RESETANDO O ESP32 EM CASO DE FALHAS
+void resetarESP(){
+  Serial.println("RESETANDO ESP");
+  ESP.restart();
+}
+
+
 // CASO DESCONECTE COM A REDE, FAÇA A RECONEXÃO
 void reconectarRede(void){
   if ((WiFi.status() != WL_CONNECTED)){
-      delay(1000);
-      WiFi.reconnect();
+      delay(10000);
+      resetarESP();
   }
 }
 
@@ -83,6 +90,7 @@ void setup(){
   server.on("/cam.jpg", handleJpg);
   server.on("/cam.mjpeg", handleMjpeg);
 
+  server.on("/RESET", resetarESP);
   server.begin();
 }
 

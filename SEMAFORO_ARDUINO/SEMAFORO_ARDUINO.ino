@@ -8,19 +8,19 @@ void setup() {
   pinMode(VERDE,    OUTPUT);
 }
 
-void loop() {
-  digitalWrite(VERMELHO, HIGH);
+void loop(){
+  digitalWrite(VERMELHO, LOW);
   digitalWrite(AMARELO,  LOW);
-  digitalWrite(VERDE,    LOW);
+  digitalWrite(VERDE,    HIGH);
   delay(5000);
-  
+
   digitalWrite(VERMELHO, LOW);
   digitalWrite(AMARELO,  HIGH);
   digitalWrite(VERDE,    LOW);
   delay(2000);
-
-  digitalWrite(VERMELHO, LOW);
+  
+  digitalWrite(VERMELHO, HIGH);
   digitalWrite(AMARELO,  LOW);
-  digitalWrite(VERDE,    HIGH);
+  digitalWrite(VERDE,    LOW);
   delay(5000);
 }
