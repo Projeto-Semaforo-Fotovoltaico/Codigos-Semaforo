@@ -10,9 +10,9 @@ ponto2 = (400, 640)
 # MOSTRANDO A IMAGEM PELO SEU OBJETO E ESPERANDO
 def show(img):
     cv2.rectangle(img, ponto1, ponto2, (0, 255, 255), thickness=3)
-    img = cv2.resize(img, (800, 600), interpolation=cv2.INTER_CUBIC)
+    ret = cv2.resize(img, (800, 600), interpolation=cv2.INTER_CUBIC)
 
-    cv2.imshow('imagem', img)
+    cv2.imshow('imagem', ret)
     cv2.waitKey(0)
 
 
