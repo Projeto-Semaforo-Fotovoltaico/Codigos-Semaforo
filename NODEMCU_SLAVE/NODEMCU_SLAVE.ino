@@ -68,16 +68,15 @@ void processaRequisicao(String requisicao){
 // ESTABELECENDO A COMUNICAÇÃO WIFI E MONITOR SERIAL
 void setup() {
     Serial.begin(9600); 
-    
-    // CONECTANDO À REDE DO OUTRO NODEMCU MASTER
-    conectarRede("ProjetoSemaforo", "12345678");
-    exibirInformacoes();
-  
     pinMode(LED_BUILTIN, OUTPUT);
     pinMode(LED, OUTPUT);
 
     digitalWrite(LED_BUILTIN, LOW);
     digitalWrite(LED, ESTADO);
+    
+    // CONECTANDO À REDE DO OUTRO NODEMCU MASTER
+    conectarRede("ProjetoSemaforo", "12345678");
+    exibirInformacoes();
 }
 
 

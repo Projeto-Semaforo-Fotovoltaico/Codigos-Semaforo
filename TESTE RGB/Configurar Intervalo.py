@@ -3,8 +3,8 @@ import cv2, os
 import numpy as np
 from random import randint
 
-ponto1 = (300, 540)
-ponto2 = (400, 640)
+ponto1 = (120, 65)
+ponto2 = (150, 155)
 
 
 # MOSTRANDO A IMAGEM PELO SEU OBJETO E ESPERANDO
@@ -31,7 +31,7 @@ def desenharCirculo(img, detected):
     return img
 
 
-# RECONHECENDO O CÍRCULO MAIS VERMELHOS PRESENTE EM UMA IMAGEM
+# RECONHECENDO O CÍRCULO MAIS VERMELHO PRESENTE EM UMA IMAGEM
 def reconhecerVermelho(img):
     HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
@@ -42,7 +42,7 @@ def reconhecerVermelho(img):
     maskr = cv2.inRange(HSV, low, high)
 
     redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
-                                     param1=50, param2=9.9, minRadius=5, maxRadius=300)
+                                     param1=50, param2=10, minRadius=5, maxRadius=500)
 
     if type(redCircles).__module__ == np.__name__:
         for circulo in redCircles:
@@ -53,26 +53,13 @@ def reconhecerVermelho(img):
 
 # VERIFICANDO SE O SINAL ESTÁ ACIMA DA MENOR ALTURA ACEITA
 def validarPosicao(img, redCircle, maskr, low, high):
-    if 300 <= redCircle[0] <= 400 and 540 <= redCircle[1] <= 640:
+    if (ponto1[0] <= redCircle[0] <= ponto2[0]) and (ponto1[1] <= redCircle[1] <= ponto2[1]):
         print()
-        print('DETECTADO: ', f'[{low[0]}, {low[1]}, {low[2]}]', f'[{high[0]}, {high[1]}, {high[2]}]')
+        print('DETECTADO: ', f'[{low[0]}, {low[1]}, {low[2]}],', f'[{high[0]}, {high[1]}, {high[2]}]')
         show(maskr)
         return redCircle
 
     return []
-
-
-# RETORNA O ENDEREÇO TODOS OS ARQUIVOS EM UM ENDEREÇO
-def allFiles(endereco):
-    arquivos = []
-    for caminhoDiretorio, nomeDiretorio, nomeArquivo in os.walk(endereco):
-        if caminhoDiretorio == endereco:  # OBTENHA OS ARQUIVOS QUE ESTÃO NESSA PASTA
-            arquivos.extend(nomeArquivo)
-
-    for c, file in enumerate(arquivos):
-        arquivos[c] = endereco + fr'\{arquivos[c]}'
-
-    return arquivos
 
 
 # EXIBE TODAS AS FOTOS ENCONTRADAS EM UM ENDEREÇO
@@ -94,4 +81,4 @@ def fotos(endereco):
         print('.', end='')
 
 
-fotos('Teste\Teste.jpeg')
+fotos('Teste\Teste3.png')

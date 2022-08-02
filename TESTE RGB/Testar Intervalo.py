@@ -17,20 +17,34 @@ def desenharCirculos(img, detected):
     return img
 
 
+def juntarIntervalos(HSV):
+    intervalos = [
+        [[170, 127, 251], [180, 137, 261]],
+        [[173, 135, 247], [183, 145, 257]],
+        [[170, 168, 255], [180, 178, 265]],
+        [[167, 102, 251], [177, 112, 261]],
+        [[168, 151, 250], [178, 161, 260]],
+        [[14, 129, 241], [24, 139, 251]],
+        [[14, 106, 239], [24, 116, 249]]
+    ]
+    
+    for c in range(len(intervalos)):
+        low  = np.array(intervalos[c][0])
+        high = np.array(intervalos[c][1])
+        intervalos[c] = cv2.inRange(HSV, low, high)
+
+    mask = intervalos[0]
+    for c in range(1, len(intervalos)):
+        mask = cv2.add(mask, intervalos[c])
+
+    return mask
+
+
 # RECONHECENDO O CÍRCULO MAIS VERMELHOS PRESENTE EM UMA IMAGEM
 def reconhecerVermelhos(img):
     HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    maskr = juntarIntervalos(HSV)
 
-    low1 = np.array([14, 129, 241])
-    high1 = np.array([24, 139, 251])
-
-    low2 = np.array([14, 106, 239])
-    high2 = np.array([24, 116, 249])
-
-    mask1 = cv2.inRange(HSV, low1, high1)
-    mask2 = cv2.inRange(HSV, low2, high2)
-
-    maskr = cv2.add(mask1, mask2)
     redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
                                      param1=50, param2=9.9, minRadius=5, maxRadius=300)
 
@@ -69,4 +83,18 @@ def video(endereco):
     cv2.destroyAllWindows()
 
 
-video('Teste/VideoSemaforo.mp4')
+
+# EXIBE E IDENTIFICA SINAIS VERMELHOS EM UMA FOTO
+def foto(endereco):
+    img = cv2.imread(endereco)
+    vermelhos = reconhecerVermelhos(img)
+
+    if len(vermelhos):
+        img = desenharCirculos(img, vermelhos)
+
+    cv2.imshow('Frame', img)
+    cv2.waitKey(0)
+
+
+#video('Teste/VideoSemaforo.mp4')
+foto('Teste/Teste4.png')
