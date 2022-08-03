@@ -44,7 +44,7 @@ def reconhecerVermelhos(img):
 
 # NOME DA REDE, URL PRA ATIVAR A CAMERA, URL PARA ATIVAR O COMANDO
 def run(networkName, urlCamera, urlNode1, urlNode2):
-    MAX = 5                         # TAMANHO DO VETOR DE DETECÇÕES
+    MAX = 1                         # TAMANHO DO VETOR DE DETECÇÕES
     vermelhos = False               # VARIÁVEL DE DETECÇÃO DO SINAL
     vetor = np.zeros(MAX)           # VETOR DE DETECÇÕES
     utlimaAtualizacao = time()      # VARIÁVEL PARA SINCRONIZAÇÃO DO SINAL
@@ -56,7 +56,7 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
 
     def requisicao(url):
         try:
-            return urllib.request.urlopen(url)
+            return urllib.request.urlopen(url, timeout=0.8)
         except Exception:
             return False
 
@@ -86,6 +86,12 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
 
     conectarRede(networkName)
     while True:
+        if x == 10:
+            print('Resetando ESP')
+            requisicao(urlCamera + 'RESET')
+            x = 0
+            sleep(10)
+
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
         WEBinfo = requisicao(urlCamera + 'cam-hi.jpg')
 
@@ -116,19 +122,14 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
             print('ATIVANDO RELÉ')
             requisicao(urlNode1 + 'ATIVAR')
             requisicao(urlNode2 + 'ATIVAR')
-
-            utlimaAtualizacao = utlimaAtualizacao - time()
-            print('ATUALIZAÇÃO VERMELHO: ')
+            
+            print('ATUALIZAÇÃO VERMELHO: ', time() - utlimaAtualizacao)
+            utlimaAtualizacao = time()
         if sinal == 3:
             print('DESATIVANDO RELÉ')
+
             requisicao(urlNode1 + 'DESATIVAR')
             requisicao(urlNode2 + 'DESATIVAR')
-
-        if x == 10:
-            print('Resetando ESP')
-            requisicao(urlCamera + 'RESET')
-            x = 0
-            sleep(10)
 
         sleep(0.01)
 
