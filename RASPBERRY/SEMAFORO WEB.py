@@ -5,6 +5,7 @@ from time import sleep
 from time import time
 
 
+# CRIANDO UMA IMAGEM QUE APRESENTA APENAS O INTERVALO RGB ESCOLHIDO
 def juntarIntervalos(HSV):
     intervalos = [
         [[170, 127, 251], [180, 137, 261]],
@@ -13,7 +14,14 @@ def juntarIntervalos(HSV):
         [[167, 102, 251], [177, 112, 261]],
         [[168, 151, 250], [178, 161, 260]],
         [[14, 129, 241], [24, 139, 251]],
-        [[14, 106, 239], [24, 116, 249]]
+        [[14, 106, 239], [24, 116, 249]],
+        [[170, 123, 248], [180, 133, 258]],
+        [[164, 139, 255], [174, 149, 265]],
+        [[171, 163, 252], [181, 173, 262]],
+        [[174, 141, 252], [184, 151, 262]],
+        [[165, 168, 85], [175, 178, 95]],
+        [[169, 176, 247], [179, 186, 257]],
+        [[169, 168, 251], [179, 178, 261]]
     ]
     
     for c in range(len(intervalos)):
@@ -34,7 +42,7 @@ def reconhecerVermelhos(img):
     maskr = juntarIntervalos(HSV)
 
     redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
-                                     param1=50, param2=9.9, minRadius=5, maxRadius=300)
+                                     param1=50, param2=10, minRadius=5, maxRadius=300)
 
     if type(redCircles).__module__ == np.__name__:
         return True
@@ -54,9 +62,9 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
     def conectarRede(networkName):
         os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
 
-    def requisicao(url):
+    def requisicao(url, tempoResposta):
         try:
-            return urllib.request.urlopen(url, timeout=0.8)
+            return urllib.request.urlopen(url, timeout=tempoResposta)
         except Exception:
             return False
 
@@ -86,50 +94,35 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
 
     conectarRede(networkName)
     while True:
-        if x == 10:
-            print('Resetando ESP')
-            requisicao(urlCamera + 'RESET')
-            x = 0
-            sleep(10)
-
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
-        WEBinfo = requisicao(urlCamera + 'cam-hi.jpg')
+        WEBinfo = requisicao(urlCamera + 'cam-hi.jpg', tempoResposta=0.7)
 
         if not WEBinfo:
             print('Sem Resposta')
             sleep(0.5)
-            x = x + 1
             continue
 
         try:
-            tempo = time()
-
             # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
             img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
-
-            print('TEMPO PARA LEITURA DA IMAGEM: ', time() - tempo, '\n')
 
             img = cv2.imdecode(img, -1)
             vermelhos = reconhecerVermelhos(img)
         except Exception:
             print('Erro ao passar imagem para Array!')
-            x = x + 1
             continue
 
         sinal = processaSinal(vermelhos)
 
         if sinal == 2:
             print('ATIVANDO RELÉ')
-            requisicao(urlNode1 + 'ATIVAR')
-            requisicao(urlNode2 + 'ATIVAR')
-            
-            print('ATUALIZAÇÃO VERMELHO: ', time() - utlimaAtualizacao)
-            utlimaAtualizacao = time()
+            requisicao(urlNode1 + 'ATIVAR', tempoResposta=2)
+            requisicao(urlNode2 + 'ATIVAR', tempoResposta=2)
+
         if sinal == 3:
             print('DESATIVANDO RELÉ')
-
-            requisicao(urlNode1 + 'DESATIVAR')
-            requisicao(urlNode2 + 'DESATIVAR')
+            requisicao(urlNode1 + 'DESATIVAR', tempoResposta=2)
+            requisicao(urlNode2 + 'DESATIVAR', tempoResposta=2)
 
         sleep(0.01)
 

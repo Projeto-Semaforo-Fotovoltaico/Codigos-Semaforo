@@ -12,15 +12,15 @@ void loop(){
   digitalWrite(VERMELHO, LOW);
   digitalWrite(AMARELO,  LOW);
   digitalWrite(VERDE,    HIGH);
-  delay(5000);
+  delay(10000);
 
   digitalWrite(VERMELHO, LOW);
   digitalWrite(AMARELO,  HIGH);
   digitalWrite(VERDE,    LOW);
-  delay(2000);
+  delay(5000);
   
   digitalWrite(VERMELHO, HIGH);
   digitalWrite(AMARELO,  LOW);
   digitalWrite(VERDE,    LOW);
-  delay(5000);
+  delay(10000);
 }

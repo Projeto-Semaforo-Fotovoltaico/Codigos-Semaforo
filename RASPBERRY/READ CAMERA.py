@@ -22,7 +22,7 @@ def run(url):
     while True:
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
         try:
-            WEBinfo = urllib.request.urlopen(url)
+            WEBinfo = urllib.request.urlopen(url, timeout=0.2)
 
             # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
             img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)

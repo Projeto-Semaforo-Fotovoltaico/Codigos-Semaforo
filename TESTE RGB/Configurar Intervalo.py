@@ -3,8 +3,8 @@ import cv2, os
 import numpy as np
 from random import randint
 
-ponto1 = (120, 65)
-ponto2 = (150, 155)
+ponto1 = (110, 65)
+ponto2 = (200, 155)
 
 
 # MOSTRANDO A IMAGEM PELO SEU OBJETO E ESPERANDO
