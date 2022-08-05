@@ -1,8 +1,16 @@
-from code import interact
 import urllib.request, os, cv2
 import numpy as np
-from time import sleep
-from time import time
+from time import sleep, time
+
+
+# VARIÁVEIS GLOBAIS PARA SEREM UTILIZADAS NAS FUNÇÕES DO ALGORÍTIMO
+i = 0                   # VARIÁVEL PARA PREENCHER VETOR
+MAX = 1                 # TAMANHO DO VETOR DE DETECÇÕES
+vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
+vetor = np.zeros(MAX)   # VETOR DE DETECÇÕES
+sinc = 0                # VARIÁVEL PARA CONTAGEM DE DETECÇÕES
+vetorTempo = []         # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES
+tempoSinal = time()     # VARIÁVEL PARA TEMPO DE SINAL VERMELHO
 
 
 # CRIANDO UMA IMAGEM QUE APRESENTA APENAS O INTERVALO RGB ESCOLHIDO
@@ -13,13 +21,13 @@ def juntarIntervalos(HSV):
         [[170, 168, 255], [180, 178, 265]],
         [[167, 102, 251], [177, 112, 261]],
         [[168, 151, 250], [178, 161, 260]],
-        [[14, 129, 241], [24, 139, 251]],
-        [[14, 106, 239], [24, 116, 249]],
+        [[14, 129, 241],  [24, 139, 251] ],
+        [[14, 106, 239],  [24, 116, 249] ],
         [[170, 123, 248], [180, 133, 258]],
         [[164, 139, 255], [174, 149, 265]],
         [[171, 163, 252], [181, 173, 262]],
         [[174, 141, 252], [184, 151, 262]],
-        [[165, 168, 85], [175, 178, 95]],
+        [[165, 168, 85],  [175, 178, 95]],
         [[169, 176, 247], [179, 186, 257]],
         [[169, 168, 251], [179, 178, 261]]
     ]
@@ -50,26 +58,43 @@ def reconhecerVermelhos(img):
     return False
 
 
+# ADICIONANDO OS TEMPOS EM QUE O SINAL VERMELHO FICOU DESATIVADO
+def verificarSincronismo(sinal):
+    global tempoSinal, vetorTempo, sinc
+    tempoSinal = time() - tempoSinal
+    
+    if sinc == 20:
+        print(vetorTempo)
+        vetorTempo = vetorTempo[1:]
+        return
+
+    if sinal == 2 and tempoSinal > 5:
+        vetorTempo.append(['Vermelho',     tempoSinal])
+
+    if sinal == 3 and tempoSinal > 5:
+        vetorTempo.append(['Não Vermelho', tempoSinal])
+
+    if sinal == 2 or sinal == 3:
+        sinc = sinc + 1
+        tempoSinal = time()
+
+
 # NOME DA REDE, URL PRA ATIVAR A CAMERA, URL PARA ATIVAR O COMANDO
 def run(networkName, urlCamera, urlNode1, urlNode2):
-    MAX = 1                         # TAMANHO DO VETOR DE DETECÇÕES
-    vermelhos = False               # VARIÁVEL DE DETECÇÃO DO SINAL
-    vetor = np.zeros(MAX)           # VETOR DE DETECÇÕES
-    utlimaAtualizacao = time()      # VARIÁVEL PARA SINCRONIZAÇÃO DO SINAL
-    i = 0                           # VARIÁVEL PARA PREENCHER VETOR
-    x = 0                           # VARIÁVEL PARA DETECTAR PROBLEMAS DE LEITURA
+    global vermelhos, vetor, i, MAX
 
     def conectarRede(networkName):
         os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
 
-    def requisicao(url, tempoResposta):
+    def requisicao(url, timeout):
         try:
-            return urllib.request.urlopen(url, timeout=tempoResposta)
+            return urllib.request.urlopen(url, timeout=timeout)
         except Exception:
             return False
 
+
     def processaSinal(vermelhos):
-        nonlocal vetor, i
+        global vetor, i
 
         if vermelhos:
             print('SEMÁFORO VERMELHO DETECTADO!')
@@ -95,11 +120,10 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
     conectarRede(networkName)
     while True:
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
-        WEBinfo = requisicao(urlCamera + 'cam-hi.jpg', tempoResposta=0.7)
+        WEBinfo = requisicao(urlCamera + 'cam-hi.jpg', timeout=0.7)
 
         if not WEBinfo:
             print('Sem Resposta')
-            sleep(0.5)
             continue
 
         try:
@@ -108,21 +132,23 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
 
             img = cv2.imdecode(img, -1)
             vermelhos = reconhecerVermelhos(img)
+
         except Exception:
             print('Erro ao passar imagem para Array!')
             continue
 
         sinal = processaSinal(vermelhos)
+        verificarSincronismo(sinal)
 
         if sinal == 2:
             print('ATIVANDO RELÉ')
-            requisicao(urlNode1 + 'ATIVAR', tempoResposta=2)
-            requisicao(urlNode2 + 'ATIVAR', tempoResposta=2)
+            requisicao(urlNode1 + 'ATIVAR', timeout=1)
+            requisicao(urlNode2 + 'ATIVAR', timeout=1)
 
         if sinal == 3:
             print('DESATIVANDO RELÉ')
-            requisicao(urlNode1 + 'DESATIVAR', tempoResposta=2)
-            requisicao(urlNode2 + 'DESATIVAR', tempoResposta=2)
+            requisicao(urlNode1 + 'DESATIVAR', timeout=1)
+            requisicao(urlNode2 + 'DESATIVAR', timeout=1)
 
         sleep(0.01)
 
