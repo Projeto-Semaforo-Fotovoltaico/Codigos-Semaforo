@@ -60,19 +60,24 @@ def reconhecerVermelhos(img):
 
 # ADICIONANDO OS TEMPOS EM QUE O SINAL VERMELHO FICOU DESATIVADO
 def verificarSincronismo(sinal):
-    global tempoSinal, vetorTempo, sinc
+    global tempoSinal, temposVermelho, temposResto, sinc
     tempoSinal = time() - tempoSinal
     
     if sinc == 20:
-        print(vetorTempo)
-        vetorTempo = vetorTempo[1:]
+        mediaVermelhos = np.mean(temposVermelho[1:])
+        mediaResto     = np.mean(temposResto[1:])
+
+        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS: {mediaVermelhos}')
+        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS: {mediaResto}')
         return
 
     if sinal == 2 and tempoSinal > 5:
-        vetorTempo.append(['Vermelho',     tempoSinal])
+        print(f'{tempoSinal} ADICIONADO AO SINAL VERMELHO')
+        temposVermelho.append(tempoSinal)
 
     if sinal == 3 and tempoSinal > 5:
-        vetorTempo.append(['Não Vermelho', tempoSinal])
+        print(f'{tempoSinal} ADICIONADO AO SINAL NÃO VERMELHO')
+        temposResto.append(tempoSinal)
 
     if sinal == 2 or sinal == 3:
         sinc = sinc + 1
@@ -124,6 +129,7 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
 
         if not WEBinfo:
             print('Sem Resposta')
+            sleep(0.1)
             continue
 
         try:
@@ -150,6 +156,7 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
             requisicao(urlNode1 + 'DESATIVAR', timeout=1)
             requisicao(urlNode2 + 'DESATIVAR', timeout=1)
 
+        print()
         sleep(0.01)
 
 
