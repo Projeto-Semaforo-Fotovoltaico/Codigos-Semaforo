@@ -3,8 +3,8 @@ import cv2, os
 import numpy as np
 from random import randint
 
-ponto1 = (110, 65)
-ponto2 = (200, 155)
+ponto1 = (60, 20)
+ponto2 = (100, 70)
 
 
 # MOSTRANDO A IMAGEM PELO SEU OBJETO E ESPERANDO
@@ -81,4 +81,4 @@ def fotos(endereco):
         print('.', end='')
 
 
-fotos('Teste\Teste3.png')
+fotos('Teste\Teste2.png')

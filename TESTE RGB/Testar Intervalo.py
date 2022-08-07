@@ -1,5 +1,6 @@
 import cv2, os
 import numpy as np
+from time import time
 
 
 # DESENHANDO OS CÍRCULOS EM UMA LISTA DE COORDENADAS
@@ -23,13 +24,13 @@ def juntarIntervalos(HSV):
         [[170, 168, 255], [180, 178, 265]],
         [[167, 102, 251], [177, 112, 261]],
         [[168, 151, 250], [178, 161, 260]],
-        [[14, 129, 241], [24, 139, 251]],
-        [[14, 106, 239], [24, 116, 249]],
+        [[14, 129, 241],  [24, 139, 251] ],
+        [[14, 106, 239],  [24, 116, 249] ],
         [[170, 123, 248], [180, 133, 258]],
         [[164, 139, 255], [174, 149, 265]],
         [[171, 163, 252], [181, 173, 262]],
         [[174, 141, 252], [184, 151, 262]],
-        [[165, 168, 85], [175, 178, 95]],
+        [[165, 168, 85],  [175, 178, 95] ],
         [[169, 176, 247], [179, 186, 257]],
         [[169, 168, 251], [179, 178, 261]]
     ]
@@ -51,7 +52,7 @@ def reconhecerVermelhos(img):
     HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     maskr = juntarIntervalos(HSV)
 
-    #cv2.imshow('a', maskr)
+    #cv2.imshow('MASK', maskr)
     #cv2.waitKey(0)
 
     redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
@@ -75,7 +76,6 @@ def video(endereco):
         ret, frame = cap.read()
         if ret == True:
             frame = cv2.resize(frame, (800, 600), interpolation=cv2.INTER_CUBIC)
-
             vermelhos = reconhecerVermelhos(frame)
 
             if len(vermelhos):
@@ -95,7 +95,10 @@ def video(endereco):
 # EXIBE E IDENTIFICA SINAIS VERMELHOS EM UMA FOTO
 def foto(endereco):
     img = cv2.imread(endereco)
+
+    tempo = time()
     vermelhos = reconhecerVermelhos(img)
+    print(f'TEMPO PARA RECONHECIMENTO: {time()-tempo:.3f} SEGUNDOS!')
 
     if len(vermelhos):
         img = desenharCirculos(img, vermelhos)
@@ -105,4 +108,4 @@ def foto(endereco):
 
 
 #video('Teste/VideoSemaforo.mp4')
-foto('Teste/Teste5.png')
+foto('Teste/Teste1.png')

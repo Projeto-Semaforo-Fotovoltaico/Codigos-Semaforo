@@ -9,7 +9,8 @@ MAX = 1                 # TAMANHO DO VETOR DE DETECÇÕES
 vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
 vetor = np.zeros(MAX)   # VETOR DE DETECÇÕES
 sinc = 0                # VARIÁVEL PARA CONTAGEM DE DETECÇÕES
-vetorTempo = []         # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES
+temposVermelho = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO
+temposResto    = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES NÃO VERMELHO
 tempoSinal = time()     # VARIÁVEL PARA TEMPO DE SINAL VERMELHO
 
 
@@ -27,7 +28,7 @@ def juntarIntervalos(HSV):
         [[164, 139, 255], [174, 149, 265]],
         [[171, 163, 252], [181, 173, 262]],
         [[174, 141, 252], [184, 151, 262]],
-        [[165, 168, 85],  [175, 178, 95]],
+        [[165, 168, 85],  [175, 178, 95] ],
         [[169, 176, 247], [179, 186, 257]],
         [[169, 168, 251], [179, 178, 261]]
     ]
@@ -50,7 +51,7 @@ def reconhecerVermelhos(img):
     maskr = juntarIntervalos(HSV)
 
     redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
-                                     param1=50, param2=10, minRadius=5, maxRadius=300)
+                                    param1=50, param2=10, minRadius=5, maxRadius=300)
 
     if type(redCircles).__module__ == np.__name__:
         return True
@@ -60,7 +61,7 @@ def reconhecerVermelhos(img):
 
 # ADICIONANDO OS TEMPOS EM QUE O SINAL VERMELHO FICOU DESATIVADO
 def verificarSincronismo(sinal):
-    global tempoSinal, temposVermelho, temposResto, sinc
+    global tempoSinal, sinc, temposVermelho, temposResto
     tempoSinal = time() - tempoSinal
     
     if sinc == 20:
@@ -141,9 +142,13 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
 
         except Exception:
             print('Erro ao passar imagem para Array!')
+            print()
             continue
 
         sinal = processaSinal(vermelhos)
+        if sinal == 1:
+            continue
+        
         verificarSincronismo(sinal)
 
         if sinal == 2:
@@ -157,7 +162,7 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
             requisicao(urlNode2 + 'DESATIVAR', timeout=1)
 
         print()
-        sleep(0.01)
+        sleep(0.1)
 
 
 run('ProjetoSemaforo', 'http://192.168.4.4/', 'http://192.168.4.1/', 'http://192.168.4.3/')

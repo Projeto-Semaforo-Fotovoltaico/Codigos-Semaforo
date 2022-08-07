@@ -15,7 +15,7 @@ void startServer(char* nome, char* senha){
   
     // MODO DE TRABALHO WIFI VIA ACESS POINT
     WiFi.mode(WIFI_AP);                 
-    WiFi.softAP(nome, senha, 2, 0);
+    WiFi.softAP(nome, senha);
     WiFi.config(staticIP, gateway, subnet);
   
     // INICIALIZANDO O SERVIDOR E IMPRIMINDO INFORMAÇÕES
