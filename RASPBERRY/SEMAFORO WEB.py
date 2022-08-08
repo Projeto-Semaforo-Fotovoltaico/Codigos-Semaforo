@@ -11,7 +11,21 @@ vetor = np.zeros(MAX)   # VETOR DE DETECÇÕES
 sinc = 0                # VARIÁVEL PARA CONTAGEM DE DETECÇÕES
 temposVermelho = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO
 temposResto    = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES NÃO VERMELHO
-tempoSinal = time()     # VARIÁVEL PARA TEMPO DE SINAL VERMELHO
+atualizacao = time()    # VARIÁVEL PARA TEMPO DE SINAL VERMELHO
+
+
+# RECONHECENDO O CÍRCULO MAIS VERMELHOS PRESENTE EM UMA IMAGEM
+def reconhecerVermelhos(img):
+    HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    maskr = juntarIntervalos(HSV)
+
+    redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
+                                    param1=50, param2=10, minRadius=5, maxRadius=300)
+
+    if type(redCircles).__module__ == np.__name__:
+        return True
+
+    return False
 
 
 # CRIANDO UMA IMAGEM QUE APRESENTA APENAS O INTERVALO RGB ESCOLHIDO
@@ -45,24 +59,10 @@ def juntarIntervalos(HSV):
     return mask
 
 
-# RECONHECENDO O CÍRCULO MAIS VERMELHOS PRESENTE EM UMA IMAGEM
-def reconhecerVermelhos(img):
-    HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    maskr = juntarIntervalos(HSV)
-
-    redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
-                                    param1=50, param2=10, minRadius=5, maxRadius=300)
-
-    if type(redCircles).__module__ == np.__name__:
-        return True
-
-    return False
-
-
 # ADICIONANDO OS TEMPOS EM QUE O SINAL VERMELHO FICOU DESATIVADO
 def verificarSincronismo(sinal):
-    global tempoSinal, sinc, temposVermelho, temposResto
-    tempoSinal = time() - tempoSinal
+    global atualizacao, sinc, temposVermelho, temposResto
+    atualizacao = time() - atualizacao
     
     if sinc == 20:
         mediaVermelhos = np.mean(temposVermelho[1:])
@@ -72,72 +72,75 @@ def verificarSincronismo(sinal):
         print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS: {mediaResto}')
         return
 
-    if sinal == 2 and tempoSinal > 5:
-        print(f'{tempoSinal} ADICIONADO AO SINAL VERMELHO')
-        temposVermelho.append(tempoSinal)
+    if sinal == 2 and atualizacao > 5:
+        print(f'{atualizacao} ADICIONADO AO SINAL VERMELHO')
+        temposVermelho.append(atualizacao)
 
-    if sinal == 3 and tempoSinal > 5:
-        print(f'{tempoSinal} ADICIONADO AO SINAL NÃO VERMELHO')
-        temposResto.append(tempoSinal)
+    if sinal == 3 and atualizacao > 5:
+        print(f'{atualizacao} ADICIONADO AO SINAL NÃO VERMELHO')
+        temposResto.append(atualizacao)
 
     if sinal == 2 or sinal == 3:
         sinc = sinc + 1
-        tempoSinal = time()
+        atualizacao = time()
+
+
+# RETORNANDO O ESTADO DE DETECÇÃO ENCONTRADO PARA PREENCHER O VETOR
+def processaSinal(vermelhos):
+    global vetor, i
+
+    if vermelhos:
+        print('SEMÁFORO VERMELHO DETECTADO!')
+        vetor[i] = 1
+    else:
+        print('SEMÁFORO VERMELHO NÃO DETECTADO!')
+        vetor[i] = 0
+
+    i = i + 1
+    if i < MAX:
+        return 1
+        
+    i = 0
+    if np.mean(vetor) > 0.5:
+        vetor.fill(0)
+        return 2
+    
+    if np.mean(vetor) < 0.5:
+        vetor.fill(0)
+        return 3
+
+
+def requisicao(url, timeout):
+    try:
+        return urllib.request.urlopen(url, timeout=timeout)
+    except Exception:
+        return False
+
+
+def conectarRede(networkName):
+    os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
 
 
 # NOME DA REDE, URL PRA ATIVAR A CAMERA, URL PARA ATIVAR O COMANDO
-def run(networkName, urlCamera, urlNode1, urlNode2):
+def main(networkName, urlCamera, urlNode1, urlNode2):
     global vermelhos, vetor, i, MAX
-
-    def conectarRede(networkName):
-        os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
-
-    def requisicao(url, timeout):
-        try:
-            return urllib.request.urlopen(url, timeout=timeout)
-        except Exception:
-            return False
-
-
-    def processaSinal(vermelhos):
-        global vetor, i
-
-        if vermelhos:
-            print('SEMÁFORO VERMELHO DETECTADO!')
-            vetor[i] = 1
-        else:
-            print('SEMÁFORO VERMELHO NÃO DETECTADO!')
-            vetor[i] = 0
-
-        i = i + 1
-        if i < MAX:
-            return 1
-            
-        i = 0
-        if np.mean(vetor) > 0.5:
-            vetor.fill(0)
-            return 2
-        
-        if np.mean(vetor) < 0.5:
-            vetor.fill(0)
-            return 3
-
-
     conectarRede(networkName)
+
     while True:
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
         WEBinfo = requisicao(urlCamera + 'cam-hi.jpg', timeout=0.7)
 
         if not WEBinfo:
             print('Sem Resposta')
-            sleep(0.1)
+            print()
+            sleep(0.3)
             continue
 
         try:
             # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
             img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
-
             img = cv2.imdecode(img, -1)
+            
             vermelhos = reconhecerVermelhos(img)
 
         except Exception:
@@ -165,4 +168,4 @@ def run(networkName, urlCamera, urlNode1, urlNode2):
         sleep(0.1)
 
 
-run('ProjetoSemaforo', 'http://192.168.4.4/', 'http://192.168.4.1/', 'http://192.168.4.3/')
+main('ProjetoSemaforo', 'http://192.168.4.4/', 'http://192.168.4.1/', 'http://192.168.4.3/')

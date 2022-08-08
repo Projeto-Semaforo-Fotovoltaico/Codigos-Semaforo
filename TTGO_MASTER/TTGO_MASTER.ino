@@ -57,27 +57,18 @@ void loop() {
     // ENQUANTO NÃO FOR CONECTADO NO SERVIDOR CLIENTE
     if (!client)
       return;
-  
-    // ENQUANTO NÃO FOR RECEBIDA NENHUMA REQUISIÇÃO
-    while (!client.available())
-      continue;
     
     // LENDO A REQUISIÇÃO RECEBIDA E AUMENTANDO i
-    String requisicao = client.readStringUntil('\r');
+    String requisicao = client.readStringUntil('\r'); 
+    processaRequisicao(requisicao);
 
     // SE FOR CHAMADO A PÁGINA DE MENU PRINCIPAL
     if(requisicao.indexOf("/MENU") != -1)
         paginaHTML(&client);
 
-    // QUALQUER OUTRA REQUISIÇÃO MONTE UMA RESPOSTA SIMPLES
-    else if(requisicao.indexOf("/") != -1)
-        client.println("Response");
-        
-    processaRequisicao(requisicao);
+    // LIMPANDO O LIXO GERADO PELA REQUISIÇÃO E ENCERRANDO
     client.flush();
-    
     client.stop();
-    delay(10);
 }
 
 

@@ -21,8 +21,8 @@ void conectarRede(char* nomeRede, char* senhaRede){
     WiFi.begin(nomeRede, senhaRede);
 
     // (OPCIONAL) CONFIGURAÇÕES SECUNDÁRIAS DO SERVIDOR LOCAL
-    IPAddress staticIP(192, 168, 4, 3);     // IP ESTÁTICO (USADO PARA EXTRAIR AS IMAGENS)
-    IPAddress gateway(192, 168, 4, 2);      // GATEWAY ESTÁTICO IP 
+    IPAddress staticIP(192, 168, 4, 3);     // IP ESTÁTICO (USADO PARA AS REQUISIÇÕES)
+    IPAddress gateway(192, 168, 4, 2);      // GATEWAY ESTÁTICO IP
     IPAddress subnet(255, 255, 255, 0);     // OCULTAR SUB REDE
     WiFi.config(staticIP, gateway, subnet);
 
@@ -88,23 +88,14 @@ void loop() {
     // ENQUANTO NÃO FOR CONECTADO NO SERVIDOR CLIENTE
     if (!client)
       return;
-  
-    // ENQUANTO NÃO FOR RECEBIDA NENHUMA REQUISIÇÃO
-    while (!client.available())
-      continue;
     
     // LENDO A REQUISIÇÃO RECEBIDA E AUMENTANDO i
     String requisicao = client.readStringUntil('\r');
-
-    if(requisicao.indexOf("/") != -1)
-      paginaHTML(&client);
-    
     processaRequisicao(requisicao);
     
+    paginaHTML(&client);
     client.flush();
     client.stop();
-    delay(1);
-    tcpCleanup();
 }
 
 
