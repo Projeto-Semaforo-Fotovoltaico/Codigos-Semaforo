@@ -4,14 +4,32 @@ from time import sleep, time
 
 
 # VARIÁVEIS GLOBAIS PARA SEREM UTILIZADAS NAS FUNÇÕES DO ALGORÍTIMO
-i = 0                   # VARIÁVEL PARA PREENCHER VETOR
-MAX = 1                 # TAMANHO DO VETOR DE DETECÇÕES
-vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
-vetor = np.zeros(MAX)   # VETOR DE DETECÇÕES
-sinc = 0                # VARIÁVEL PARA CONTAGEM DE DETECÇÕES
 temposVermelho = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO
 temposResto    = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES NÃO VERMELHO
+temposErro     = []     # VETOR PARA ARMAZENAR OS TEMPOS DE ERRO DE DETECÇÃO
+sinc = 0                # VARIÁVEL PARA CONTAGEM DE DETECÇÕES
 atualizacao = time()    # VARIÁVEL PARA TEMPO DE SINAL VERMELHO
+vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
+
+
+# VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
+networkName = 'ProjetoSemaforo'
+urlCamera   = 'http://192.168.4.4/'
+urlNode1    = 'http://192.168.4.1/'
+urlNode2    = 'http://192.168.4.3/'
+
+
+# ENVIAR UMA REQUISIÇÃO PARA UM LINK COM UM TEMPO MÁXIMO DE RESPOSTA
+def requisicao(url, timeout):
+    try:
+        return urllib.request.urlopen(url, timeout=timeout)
+    except Exception:
+        return False
+
+
+# CONECTANDO A UMA REDE WIFI PELO PC ATRAVÉS DE SEU NOME PÚBLICO
+def conectarRede(networkName):
+    os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
 
 
 # RECONHECENDO O CÍRCULO MAIS VERMELHOS PRESENTE EM UMA IMAGEM
@@ -59,113 +77,89 @@ def juntarIntervalos(HSV):
     return mask
 
 
-# ADICIONANDO OS TEMPOS EM QUE O SINAL VERMELHO FICOU DESATIVADO
-def verificarSincronismo(sinal):
-    global atualizacao, sinc, temposVermelho, temposResto
-    atualizacao = time() - atualizacao
-    
-    if sinc == 20:
-        mediaVermelhos = np.mean(temposVermelho[1:])
-        mediaResto     = np.mean(temposResto[1:])
-
-        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS: {mediaVermelhos}')
-        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS: {mediaResto}')
-        return
-
-    if sinal == 2 and atualizacao > 5:
-        print(f'{atualizacao} ADICIONADO AO SINAL VERMELHO')
-        temposVermelho.append(atualizacao)
-
-    if sinal == 3 and atualizacao > 5:
-        print(f'{atualizacao} ADICIONADO AO SINAL NÃO VERMELHO')
-        temposResto.append(atualizacao)
-
-    if sinal == 2 or sinal == 3:
-        sinc = sinc + 1
-        atualizacao = time()
-
-
 # RETORNANDO O ESTADO DE DETECÇÃO ENCONTRADO PARA PREENCHER O VETOR
 def processaSinal(vermelhos):
     global vetor, i
 
     if vermelhos:
         print('SEMÁFORO VERMELHO DETECTADO!')
-        vetor[i] = 1
-    else:
-        print('SEMÁFORO VERMELHO NÃO DETECTADO!')
-        vetor[i] = 0
-
-    i = i + 1
-    if i < MAX:
-        return 1
-        
-    i = 0
-    if np.mean(vetor) > 0.5:
-        vetor.fill(0)
-        return 2
+        return True
     
-    if np.mean(vetor) < 0.5:
-        vetor.fill(0)
-        return 3
+    print('SEMÁFORO VERMELHO NÃO DETECTADO!')
+    return False
 
 
-def requisicao(url, timeout):
-    try:
-        return urllib.request.urlopen(url, timeout=timeout)
-    except Exception:
-        return False
+# ADICIONANDO OS TEMPOS EM QUE O SINAL VERMELHO FICOU DESATIVADO
+def verificarSincronismo(sinal):
+    global atualizacao, sinc, temposVermelho, temposResto, temposErro
+    global urlNode1, urlNode2
+    atualizacao = time() - atualizacao
+    
+    # TOTAL DE VARIAÇÕES DE SINAL NECESSÁRIAS PARA SINCRONIZAÇÃO
+    if sinc == 30:
+        mediaVermelhos = np.mean(temposVermelho[1:])
+        mediaResto     = np.mean(temposResto[1:])
+        mediaErros     = np.mean(temposErro)
 
+        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS: {mediaVermelhos:.2f}')
+        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS: {mediaResto:.2f}')
+        print(f'MÉDIA DOS ERROS DE TEMPO CALCULADOS:  {mediaErros:.2f}')
 
-def conectarRede(networkName):
-    os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
+        requisicao(urlNode1, f'SINCMODE?{mediaVermelhos}|{mediaResto}|{mediaErros}|{int(sinal)}|', timeout=0.5)
+        requisicao(urlNode1, f'SINCMODE?{mediaVermelhos}|{mediaResto}|{mediaErros}|{int(sinal)}|', timeout=0.5)
+        return True
+
+    # SE O VERMELHO FOI DETECTADO, ARMAZENE O SINAL NÃO VERMELHO
+    if sinal and atualizacao > 5:
+        print(f'{atualizacao} ADICIONADO AO SINAL NÃO VERMELHO')
+        temposResto.append(atualizacao)
+
+    # SE O NÃO VERMELHO FOI DETECTADO, ARMAZENE O SINAL VERMELHO
+    if (not sinal) and atualizacao > 5:
+        print(f'{atualizacao} ADICIONADO AO SINAL VERMELHO')
+        temposVermelho.append(atualizacao)
+
+    # A CADA VARIAÇÃO DE SINAL, INCREMENTE A VARIÁVEL DE SINCRONIZAÇÃO
+    if time() - atualizacao > 5:
+        sinc = sinc + 1
+        atualizacao = time()
+
+    return False
 
 
 # NOME DA REDE, URL PRA ATIVAR A CAMERA, URL PARA ATIVAR O COMANDO
-def main(networkName, urlCamera, urlNode1, urlNode2):
-    global vermelhos, vetor, i, MAX
+def main():
+    global networkName, vermelhos, urlCamera
     conectarRede(networkName)
+    sleep(5)
 
     while True:
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
-        WEBinfo = requisicao(urlCamera + 'cam-hi.jpg', timeout=0.7)
+        WEBinfo = requisicao(urlCamera + 'cam-hi.jpg', timeout=2)
 
         if not WEBinfo:
             print('Sem Resposta')
-            print()
-            sleep(0.3)
             continue
 
         try:
             # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
+            tempo = time()
+
             img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
             img = cv2.imdecode(img, -1)
-            
             vermelhos = reconhecerVermelhos(img)
+
+            # REGISTRANDO O TEMPO QUE LEVA PARA A CÂMERA ENVIAR A IMAGEM
+            temposErro.append(time() - tempo)
 
         except Exception:
             print('Erro ao passar imagem para Array!')
             print()
             continue
 
-        sinal = processaSinal(vermelhos)
-        if sinal == 1:
-            continue
-        
-        verificarSincronismo(sinal)
-
-        if sinal == 2:
-            print('ATIVANDO RELÉ')
-            requisicao(urlNode1 + 'ATIVAR', timeout=1)
-            requisicao(urlNode2 + 'ATIVAR', timeout=1)
-
-        if sinal == 3:
-            print('DESATIVANDO RELÉ')
-            requisicao(urlNode1 + 'DESATIVAR', timeout=1)
-            requisicao(urlNode2 + 'DESATIVAR', timeout=1)
-
-        print()
-        sleep(0.1)
+        sinal = processaSinal(vermelhos)      
+        if verificarSincronismo(sinal):
+            return 0
 
 
-main('ProjetoSemaforo', 'http://192.168.4.4/', 'http://192.168.4.1/', 'http://192.168.4.3/')
+main()

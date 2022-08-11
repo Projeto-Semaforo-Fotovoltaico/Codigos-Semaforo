@@ -49,9 +49,12 @@ def run(url):
         if key == ord('q'):
             break
 
-        if len(lista) == 10:
+        if len(lista) == 100:
             print()
-            print(lista)
+            lista = np.array(lista)
+            print('VALORES:       ', lista)
+            print('MÉDIA:         ', np.mean(lista))
+            print('DESVIO PADRÃO: ', np.std(lista))
             break
 
     cv2.destroyAllWindows()

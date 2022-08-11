@@ -7,11 +7,9 @@ void tcpCleanup(){
 }
 
 #include <ESP8266WiFi.h>
-
 WiFiServer server(80);
-#define LED 14
 
-bool ESTADO = LOW;
+#define LED 14
 void paginaHTML(WiFiClient *cl);
 
 
@@ -56,12 +54,44 @@ void processaRequisicao(String requisicao){
     Serial.println(requisicao);
     
     if(requisicao.indexOf("ATIVAR") != -1)
-        ESTADO = HIGH;
+        digitalWrite(LED, HIGH);
   
     if(requisicao.indexOf("DESATIVAR") != -1)
-        ESTADO = LOW;
+        digitalWrite(LED, LOW);
 
-    digitalWrite(LED, ESTADO);
+    if(requisicao.indexOf("SINCMODE?") != -1)
+        sincMode(requisicao);
+}
+
+
+// FUNÇÃO PARA ATIVAR O MODO DE SINCRONIZAÇÃO SEM A CÂMERA
+void sincMode(String req){
+    int K0 = req.indexOf("?");      // PROCURA O PRIMEIRO "?"
+    int K1 = req.indexOf("|", K0);  // PROCURA A PARTIR DE "?"
+    int K2 = req.indexOf("|", K1);  // PROCURA A PARTIR DE "|"
+    int K3 = req.indexOf("|", K2);  // PROCURA A PARTIR DE B2
+    int K4 = req.indexOf("|", K3);  // PROCURA A PARTIR DE B3
+    
+    float tempoVermelho = req.substring(K0, K1).toFloat();
+    float tempoResto    = req.substring(K1, K2).toFloat();
+    float erro          = req.substring(K2, K3).toFloat();
+    bool  estado        = req.substring(K3, K4).toInt();
+
+    Serial.println(tempoVermelho);
+    Serial.println(tempoResto);
+    Serial.println(erro);
+    Serial.println(estado);
+    Serial.println();
+  
+    for(int x=0; x<100; x++){
+        digitalWrite(LED, estado);
+        delay((int)(tempoVermelho-erro));
+        estado = !estado;
+
+        digitalWrite(LED, estado);
+        delay((int)(tempoResto-erro));
+        estado = !estado;
+    }
 }
 
 
@@ -72,7 +102,7 @@ void setup() {
     pinMode(LED, OUTPUT);
 
     digitalWrite(LED_BUILTIN, LOW);
-    digitalWrite(LED, ESTADO);
+    digitalWrite(LED, LOW);
     
     // CONECTANDO À REDE DO OUTRO NODEMCU MASTER
     conectarRede("ProjetoSemaforo", "12345678");
@@ -92,8 +122,10 @@ void loop() {
     // LENDO A REQUISIÇÃO RECEBIDA E AUMENTANDO i
     String requisicao = client.readStringUntil('\r');
     processaRequisicao(requisicao);
-    
+
+    tcpCleanup();
     paginaHTML(&client);
+    
     client.flush();
     client.stop();
 }
@@ -116,11 +148,7 @@ void paginaHTML(WiFiClient *cl){
 
     (*cl).println("<body>");
     (*cl).print("<p>GPIO is now ");
-    
-    if (ESTADO)
-        (*cl).println("HIGH</p>");
-    else
-        (*cl).println("LOW</p>");
+    (*cl).println("LOW</p>");
 
     (*cl).println("</body>");
     (*cl).println("</html>");
