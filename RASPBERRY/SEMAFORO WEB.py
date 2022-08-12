@@ -8,8 +8,9 @@ temposVermelho = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO
 temposResto    = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES NÃO VERMELHO
 temposErro     = []     # VETOR PARA ARMAZENAR OS TEMPOS DE ERRO DE DETECÇÃO
 sinc = 0                # VARIÁVEL PARA CONTAGEM DE DETECÇÕES
-atualizacao = time()    # VARIÁVEL PARA TEMPO DE SINAL VERMELHO
+atualizacao = time()    # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
 vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
+estadoAnterior = False  # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
 
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
@@ -89,16 +90,43 @@ def processaSinal(vermelhos):
     return False
 
 
+# SE O SINAL MUDOU PARA VERMELHO, ARMAZENE O TEMPO DE SINAL NÃO VERMELHO (VICE-VERSA)
+def adicionarSinal(sinal):
+    global temposVermelho, temposResto, sinc, atualizacao, estadoAnterior
+
+    if sinal:
+        print(f'{atualizacao} ADICIONADO AO SINAL NÃO VERMELHO')
+        temposResto.append(atualizacao)
+    else:
+        print(f'{atualizacao} ADICIONADO AO SINAL VERMELHO')
+        temposVermelho.append(atualizacao)
+    
+    sinc = sinc + 1          # INCREMENTANDO A SINCRONIZAÇÃO
+    estadoAnterior = sinal   # ATUALIZANDO O ESTADO ANTERIOR
+    atualizacao = time()     # ATUALIZANDO O TEMPO DE ATUALIZAÇÃO
+
+
 # ADICIONANDO OS TEMPOS EM QUE O SINAL VERMELHO FICOU DESATIVADO
 def verificarSincronismo(sinal):
     global atualizacao, sinc, temposVermelho, temposResto, temposErro
-    global urlNode1, urlNode2
+    global estadoAnterior, urlNode1, urlNode2
+
+    # PRIMERIA VEZ QUE ENTRA NA FUNÇÃO, ESTABELEÇA AS CONDIÇÕES INICIAIS
+    if sinc == 0:
+        adicionarSinal(sinal)
+        return False
+
+    # SÓ PROSSEGUE SE O SINAL MUDAR DE ESTADO E DEMORAR MAIS QUE 5 SEGUNDOS (GARANTIA)
+    if estadoAnterior == sinal or time() - atualizacao < 5:
+        return False
+
+    # ENCONTRANDO E ATUALIZANDO O TEMPO DE VARIAÇÃO DE SINAL
     atualizacao = time() - atualizacao
     
     # TOTAL DE VARIAÇÕES DE SINAL NECESSÁRIAS PARA SINCRONIZAÇÃO
     if sinc == 30:
-        mediaVermelhos = np.mean(temposVermelho[1:])
-        mediaResto     = np.mean(temposResto[1:])
+        mediaVermelhos = np.mean(temposVermelho[2:])
+        mediaResto     = np.mean(temposResto[2:])
         mediaErros     = np.mean(temposErro)
 
         print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS: {mediaVermelhos:.2f}')
@@ -108,26 +136,13 @@ def verificarSincronismo(sinal):
         requisicao(urlNode1, f'SINCMODE?{mediaVermelhos}|{mediaResto}|{mediaErros}|{int(sinal)}|', timeout=0.5)
         requisicao(urlNode1, f'SINCMODE?{mediaVermelhos}|{mediaResto}|{mediaErros}|{int(sinal)}|', timeout=0.5)
         return True
-
-    # SE O VERMELHO FOI DETECTADO, ARMAZENE O SINAL NÃO VERMELHO
-    if sinal and atualizacao > 5:
-        print(f'{atualizacao} ADICIONADO AO SINAL NÃO VERMELHO')
-        temposResto.append(atualizacao)
-
-    # SE O NÃO VERMELHO FOI DETECTADO, ARMAZENE O SINAL VERMELHO
-    if (not sinal) and atualizacao > 5:
-        print(f'{atualizacao} ADICIONADO AO SINAL VERMELHO')
-        temposVermelho.append(atualizacao)
-
-    # A CADA VARIAÇÃO DE SINAL, INCREMENTE A VARIÁVEL DE SINCRONIZAÇÃO
-    if time() - atualizacao > 5:
-        sinc = sinc + 1
-        atualizacao = time()
-
+    
+    # A CADA VARIAÇÃO DE SINAL, INCREMENTE A VARIÁVEL E RESETE A CONTAGEM
+    adicionarSinal(sinal)
     return False
 
 
-# NOME DA REDE, URL PRA ATIVAR A CAMERA, URL PARA ATIVAR O COMANDO
+# FUNÇÃO PRINCIPAL DO PROGRAMA NO MODO LOOP ATÉ O SINCRONISMO
 def main():
     global networkName, vermelhos, urlCamera
     conectarRede(networkName)
@@ -135,6 +150,7 @@ def main():
 
     while True:
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
+        tempo = time()
         WEBinfo = requisicao(urlCamera + 'cam-hi.jpg', timeout=2)
 
         if not WEBinfo:
@@ -143,8 +159,6 @@ def main():
 
         try:
             # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
-            tempo = time()
-
             img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
             img = cv2.imdecode(img, -1)
             vermelhos = reconhecerVermelhos(img)
@@ -154,12 +168,10 @@ def main():
 
         except Exception:
             print('Erro ao passar imagem para Array!')
-            print()
             continue
 
         sinal = processaSinal(vermelhos)      
         if verificarSincronismo(sinal):
-            return 0
-
+            break
 
 main()

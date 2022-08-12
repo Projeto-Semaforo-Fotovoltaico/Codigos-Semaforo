@@ -4,7 +4,7 @@ def formatar(string):
     formatado = ''
 
     for linha in string.split('\n'):
-        temp = '(*cl).println("' + linha.strip() + '");'  + '\n'
+        temp = '\t' + '(*cl).println("' + linha.strip() + '");'  + '\n'
         if '(*cl).println("")' not in temp:
             formatado += temp
     
