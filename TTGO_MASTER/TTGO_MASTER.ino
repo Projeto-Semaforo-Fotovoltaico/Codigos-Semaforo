@@ -47,10 +47,10 @@ void sincMode(String req){
     int K3 = req.indexOf("|", K2);  // PROCURA A PARTIR DE B2
     int K4 = req.indexOf("|", K3);  // PROCURA A PARTIR DE B3
     
-    float tempoVermelho = req.substring(K0, K1).toFloat();
-    float tempoResto    = req.substring(K1, K2).toFloat();
-    float erro          = req.substring(K2, K3).toFloat();
-    bool  estado        = req.substring(K3, K4).toInt();
+    float tempoVermelho = req.substring(K0+1, K1).toFloat();
+    float tempoResto    = req.substring(K1+1, K2).toFloat();
+    float erro          = req.substring(K2+1, K3).toFloat();
+    bool  estado        = req.substring(K3+1, K4).toInt();
 
     Serial.println(tempoVermelho);
     Serial.println(tempoResto);

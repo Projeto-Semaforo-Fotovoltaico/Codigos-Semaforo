@@ -134,7 +134,7 @@ def verificarSincronismo(sinal):
         print(f'MÉDIA DOS ERROS DE TEMPO CALCULADOS:  {mediaErros:.2f}')
 
         requisicao(urlNode1, f'SINCMODE?{mediaVermelhos}|{mediaResto}|{mediaErros}|{int(sinal)}|', timeout=0.5)
-        requisicao(urlNode1, f'SINCMODE?{mediaVermelhos}|{mediaResto}|{mediaErros}|{int(sinal)}|', timeout=0.5)
+        requisicao(urlNode2, f'SINCMODE?{mediaVermelhos}|{mediaResto}|{mediaErros}|{int(sinal)}|', timeout=0.5)
         return True
     
     # A CADA VARIAÇÃO DE SINAL, INCREMENTE A VARIÁVEL E RESETE A CONTAGEM
