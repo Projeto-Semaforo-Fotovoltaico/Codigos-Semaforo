@@ -1,3 +1,4 @@
+from tkinter.tix import MAX
 import urllib.request, os, cv2
 import numpy as np
 from time import sleep, time
@@ -6,11 +7,11 @@ from time import sleep, time
 # VARIÁVEIS GLOBAIS PARA SEREM UTILIZADAS NAS FUNÇÕES DO ALGORÍTIMO
 temposVermelho = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO
 temposResto    = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES NÃO VERMELHO
-temposErro     = []     # VETOR PARA ARMAZENAR OS TEMPOS DE ERRO DE DETECÇÃO
 sinc = 0                # VARIÁVEL PARA CONTAGEM DE DETECÇÕES
 atualizacao = time()    # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
 vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
 estadoAnterior = False  # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
+MAX = 30
 
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
@@ -106,6 +107,33 @@ def adicionarSinal(sinal):
     atualizacao = time()     # ATUALIZANDO O TEMPO DE ATUALIZAÇÃO
 
 
+def treatData(list):
+    array = np.array(list)
+    
+    std  = np.std(array)
+    mean = np.mean(array)
+
+    upper = mean + 3*std
+    lower = mean - 3*std
+
+    array = array[(array > lower) & array < upper]
+    return np.mean(array)
+
+
+# RETORNANDO A MÉDIA DE UMA LISTA SEM OUTLIERS
+def treatData(list):
+    array = np.array(list)
+    
+    std  = np.std(array)
+    mean = np.mean(array)
+
+    upper = mean + 2*std
+    lower = mean - 2*std
+
+    array = array[(array > lower) & (array < upper)]
+    return np.mean(array)
+
+
 # ADICIONANDO OS TEMPOS EM QUE O SINAL VERMELHO FICOU DESATIVADO
 def verificarSincronismo(sinal):
     global atualizacao, sinc, temposVermelho, temposResto, temposErro
@@ -124,17 +152,15 @@ def verificarSincronismo(sinal):
     atualizacao = time() - atualizacao
     
     # TOTAL DE VARIAÇÕES DE SINAL NECESSÁRIAS PARA SINCRONIZAÇÃO
-    if sinc == 30:
-        mediaVermelhos = np.mean(temposVermelho[2:])
-        mediaResto     = np.mean(temposResto[2:])
-        mediaErros     = np.mean(temposErro)
+    if sinc == MAX:
+        mediaVermelhos = int(treatData(temposVermelho[2:]) * 1000)
+        mediaResto     = int(treatData(temposResto[2:])    * 1000)
 
-        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS: {mediaVermelhos:.2f}')
-        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS: {mediaResto:.2f}')
-        print(f'MÉDIA DOS ERROS DE TEMPO CALCULADOS:  {mediaErros:.2f}')
+        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS:     {mediaVermelhos}')
+        print(f'MÉDIA DOS TEMPOS DE SINAIS NÃO VERMELHOS: {mediaResto}')
 
-        requisicao(urlNode1, f'SINCMODE?{mediaVermelhos}|{mediaResto}|{mediaErros}|{int(sinal)}|', timeout=0.5)
-        requisicao(urlNode2, f'SINCMODE?{mediaVermelhos}|{mediaResto}|{mediaErros}|{int(sinal)}|', timeout=0.5)
+        requisicao(urlNode1 + f'SINC?{mediaVermelhos}|{mediaResto}|{int(sinal)}|', timeout=0.5)
+        requisicao(urlNode2 + f'SINC?{mediaVermelhos}|{mediaResto}|{int(sinal)}|', timeout=0.5)
         return True
     
     # A CADA VARIAÇÃO DE SINAL, INCREMENTE A VARIÁVEL E RESETE A CONTAGEM
@@ -150,7 +176,6 @@ def main():
 
     while True:
         # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
-        tempo = time()
         WEBinfo = requisicao(urlCamera + 'cam-hi.jpg', timeout=2)
 
         if not WEBinfo:
@@ -162,9 +187,6 @@ def main():
             img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
             img = cv2.imdecode(img, -1)
             vermelhos = reconhecerVermelhos(img)
-
-            # REGISTRANDO O TEMPO QUE LEVA PARA A CÂMERA ENVIAR A IMAGEM
-            temposErro.append(time() - tempo)
 
         except Exception:
             print('Erro ao passar imagem para Array!')

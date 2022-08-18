@@ -2,7 +2,7 @@
 WiFiServer server(80);
 
 #define LED 0
-void paginaHTML(WiFiClient *cl)
+void paginaHTML(WiFiClient *cl);
 
 
 // CRIANDO E INICIANDO O ROTEADOR LOCAL
@@ -34,37 +34,34 @@ void processaRequisicao(String requisicao){
     if(requisicao.indexOf("DESATIVAR") != -1)
         digitalWrite(LED, LOW);
 
-    if(requisicao.indexOf("SINCMODE?") != -1)
+    if(requisicao.indexOf("SINC?") != -1)
         sincMode(requisicao);
 }
 
 
 // FUNÇÃO PARA ATIVAR O MODO DE SINCRONIZAÇÃO SEM A CÂMERA
 void sincMode(String req){
-    int K0 = req.indexOf("?");      // PROCURA O PRIMEIRO "?"
-    int K1 = req.indexOf("|", K0);  // PROCURA A PARTIR DE "?"
-    int K2 = req.indexOf("|", K1);  // PROCURA A PARTIR DE "|"
-    int K3 = req.indexOf("|", K2);  // PROCURA A PARTIR DE B2
-    int K4 = req.indexOf("|", K3);  // PROCURA A PARTIR DE B3
+    int K0 = req.indexOf("?");        // PROCURA O PRIMEIRO "?"
+    int K1 = req.indexOf("|", K0+1);  // PROCURA A PARTIR DE "?"
+    int K2 = req.indexOf("|", K1+1);  // PROCURA A PARTIR DO PRIMEIRO "|"
+    int K3 = req.indexOf("|", K2+1);  // PROCURA A PARTIR DO SEGUNDO  "|"
     
-    float tempoVermelho = req.substring(K0+1, K1).toFloat();
-    float tempoResto    = req.substring(K1+1, K2).toFloat();
-    float erro          = req.substring(K2+1, K3).toFloat();
-    bool  estado        = req.substring(K3+1, K4).toInt();
-
+    int  tempoVermelho = req.substring(K0+1, K1).toInt();
+    int  tempoResto    = req.substring(K1+1, K2).toInt();
+    bool estado        = req.substring(K2+1, K3).toInt();
+    
     Serial.println(tempoVermelho);
     Serial.println(tempoResto);
-    Serial.println(erro);
     Serial.println(estado);
     Serial.println();
   
     for(int x=0; x<100; x++){
         digitalWrite(LED, estado);
-        delay((int)(tempoVermelho-erro));
+        delay(tempoVermelho);
         estado = !estado;
 
         digitalWrite(LED, estado);
-        delay((int)(tempoResto-erro));
+        delay(tempoResto);
         estado = !estado;
     }
 }
