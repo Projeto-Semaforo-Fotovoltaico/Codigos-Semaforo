@@ -1,7 +1,13 @@
 #include <WiFi.h>
 WiFiServer server(80);
 
+// PINO DIGITAL CONECTADO AO RELÉ DAS LÂMPADAS
 #define LED 0
+
+// POIS SÃO ENVIADOS 2 SINAIS DE 0.2 SEGUNDOS ANTES DA ATIVAÇÃO
+#define DELAY 200
+
+// DECLARAÇÃO DA FUNÇÃO PARA CRIAÇÃO DE PÁGINA HTML
 void paginaHTML(WiFiClient *cl);
 
 
@@ -57,11 +63,11 @@ void sincMode(String req){
   
     for(int x=0; x<100; x++){
         digitalWrite(LED, estado);
-        delay(tempoVermelho);
+        delay(tempoVermelho-DELAY);
         estado = !estado;
 
         digitalWrite(LED, estado);
-        delay(tempoResto);
+        delay(tempoResto-DELAY);
         estado = !estado;
     }
 }

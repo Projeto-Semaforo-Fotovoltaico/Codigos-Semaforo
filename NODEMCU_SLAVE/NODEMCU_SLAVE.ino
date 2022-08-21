@@ -6,10 +6,17 @@ void tcpCleanup(){
     tcp_abort(tcp_tw_pcbs);
 }
 
+
 #include <ESP8266WiFi.h>
 WiFiServer server(80);
 
+// PINO DIGITAL CONECTADO AO RELÉ DAS LÂMPADAS
 #define LED 14
+
+// POIS SÃO ENVIADOS 2 SINAIS DE 0.2 SEGUNDOS ANTES DA ATIVAÇÃO
+#define DELAY 400
+
+// DECLARAÇÃO DA FUNÇÃO PARA CRIAÇÃO DE PÁGINA HTML
 void paginaHTML(WiFiClient *cl);
 
 
@@ -79,14 +86,16 @@ void sincMode(String req){
     Serial.println(tempoResto);
     Serial.println(estado);
     Serial.println();
-  
+
+    // NA PRIMEIRA ATIVAÇÃO TEMOS QUE CONSIDERAR O DELAY
+    digitalWrite(LED, estado);
+    if(estado) delay(tempoVermelho-DELAY); else delay(tempoResto-DELAY);
+    estado = !estado;
+
+    // MODO AUTOMÁTICO ONDE O DELAY DEPENDE DO ESTADO
     for(int x=0; x<100; x++){
         digitalWrite(LED, estado);
-        delay(tempoVermelho);
-        estado = !estado;
-
-        digitalWrite(LED, estado);
-        delay(tempoResto);
+        if(estado) delay(tempoVermelho); else delay(tempoResto);
         estado = !estado;
     }
 }

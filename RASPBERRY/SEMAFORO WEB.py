@@ -11,7 +11,7 @@ sinc = 0                # VARIÁVEL PARA CONTAGEM DE DETECÇÕES
 atualizacao = time()    # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
 vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
 estadoAnterior = False  # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
-MAX = 30
+MAX = 10
 
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
@@ -51,20 +51,20 @@ def reconhecerVermelhos(img):
 # CRIANDO UMA IMAGEM QUE APRESENTA APENAS O INTERVALO RGB ESCOLHIDO
 def juntarIntervalos(HSV):
     intervalos = [
-        [[170, 127, 251], [180, 137, 261]],
-        [[173, 135, 247], [183, 145, 257]],
-        [[170, 168, 255], [180, 178, 265]],
-        [[167, 102, 251], [177, 112, 261]],
-        [[168, 151, 250], [178, 161, 260]],
-        [[14, 129, 241],  [24, 139, 251] ],
-        [[14, 106, 239],  [24, 116, 249] ],
-        [[170, 123, 248], [180, 133, 258]],
-        [[164, 139, 255], [174, 149, 265]],
-        [[171, 163, 252], [181, 173, 262]],
-        [[174, 141, 252], [184, 151, 262]],
-        [[165, 168, 85],  [175, 178, 95] ],
-        [[169, 176, 247], [179, 186, 257]],
-        [[169, 168, 251], [179, 178, 261]]
+        [[174, 132, 245], [184, 142, 255]],
+        [[171, 145, 254], [181, 155, 264]],
+        [[175, 169, 245], [185, 179, 255]],
+        [[168, 172, 253], [178, 182, 263]],
+        [[172, 189, 251], [182, 199, 261]],
+        [[170, 158, 255], [180, 168, 265]],
+        [[165, 139, 74], [175, 149, 84]],
+        [[174, 171, 247], [184, 181, 257]],
+        [[172, 207, 128], [182, 217, 138]],
+        [[170, 210, 128], [180, 220, 138]],
+        [[169, 212, 81], [179, 222, 91]],
+        [[170, 214, 249], [180, 224, 259]],
+        [[175, 233, 198], [185, 243, 208]],
+        [[175, 236, 179], [185, 246, 189]]
     ]
     
     for c in range(len(intervalos)):
@@ -94,30 +94,24 @@ def processaSinal(vermelhos):
 # SE O SINAL MUDOU PARA VERMELHO, ARMAZENE O TEMPO DE SINAL NÃO VERMELHO (VICE-VERSA)
 def adicionarSinal(sinal):
     global temposVermelho, temposResto, sinc, atualizacao, estadoAnterior
+    tempo = time()
 
     if sinal:
+        requisicao(urlNode2 + 'ATIVAR', timeout=0.2) # SINAL VERMELHO
+        requisicao(urlNode1 + 'ATIVAR', timeout=0.2) # SINAL VERMELHO
+
         print(f'{atualizacao} ADICIONADO AO SINAL NÃO VERMELHO')
         temposResto.append(atualizacao)
     else:
+        requisicao(urlNode2 + 'DESATIVAR', timeout=0.2) # SINAL NÃO VERMELHO
+        requisicao(urlNode1 + 'DESATIVAR', timeout=0.2) # SINAL NÃO VERMELHO
+
         print(f'{atualizacao} ADICIONADO AO SINAL VERMELHO')
         temposVermelho.append(atualizacao)
-    
+
     sinc = sinc + 1          # INCREMENTANDO A SINCRONIZAÇÃO
     estadoAnterior = sinal   # ATUALIZANDO O ESTADO ANTERIOR
     atualizacao = time()     # ATUALIZANDO O TEMPO DE ATUALIZAÇÃO
-
-
-def treatData(list):
-    array = np.array(list)
-    
-    std  = np.std(array)
-    mean = np.mean(array)
-
-    upper = mean + 3*std
-    lower = mean - 3*std
-
-    array = array[(array > lower) & array < upper]
-    return np.mean(array)
 
 
 # RETORNANDO A MÉDIA DE UMA LISTA SEM OUTLIERS
@@ -127,8 +121,8 @@ def treatData(list):
     std  = np.std(array)
     mean = np.mean(array)
 
-    upper = mean + 2*std
-    lower = mean - 2*std
+    upper = mean + 1*std
+    lower = mean - 1*std
 
     array = array[(array > lower) & (array < upper)]
     return np.mean(array)
@@ -136,7 +130,7 @@ def treatData(list):
 
 # ADICIONANDO OS TEMPOS EM QUE O SINAL VERMELHO FICOU DESATIVADO
 def verificarSincronismo(sinal):
-    global atualizacao, sinc, temposVermelho, temposResto, temposErro
+    global atualizacao, sinc, temposVermelho, temposResto
     global estadoAnterior, urlNode1, urlNode2
 
     # PRIMERIA VEZ QUE ENTRA NA FUNÇÃO, ESTABELEÇA AS CONDIÇÕES INICIAIS
@@ -144,8 +138,8 @@ def verificarSincronismo(sinal):
         adicionarSinal(sinal)
         return False
 
-    # SÓ PROSSEGUE SE O SINAL MUDAR DE ESTADO E DEMORAR MAIS QUE 5 SEGUNDOS (GARANTIA)
-    if estadoAnterior == sinal or time() - atualizacao < 5:
+    # SÓ PROSSEGUE SE O SINAL MUDAR DE ESTADO E DEMORAR MAIS QUE 7 SEGUNDOS (GARANTIA)
+    if estadoAnterior == sinal or time() - atualizacao < 7:
         return False
 
     # ENCONTRANDO E ATUALIZANDO O TEMPO DE VARIAÇÃO DE SINAL
@@ -155,12 +149,14 @@ def verificarSincronismo(sinal):
     if sinc == MAX:
         mediaVermelhos = int(treatData(temposVermelho[2:]) * 1000)
         mediaResto     = int(treatData(temposResto[2:])    * 1000)
+        sinal = int(sinal)
 
-        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS:     {mediaVermelhos}')
-        print(f'MÉDIA DOS TEMPOS DE SINAIS NÃO VERMELHOS: {mediaResto}')
-
-        requisicao(urlNode1 + f'SINC?{mediaVermelhos}|{mediaResto}|{int(sinal)}|', timeout=0.5)
-        requisicao(urlNode2 + f'SINC?{mediaVermelhos}|{mediaResto}|{int(sinal)}|', timeout=0.5)
+        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS:     {mediaVermelhos/1000}')
+        print(f'MÉDIA DOS TEMPOS DE SINAIS NÃO VERMELHOS: {mediaResto/1000}')
+        print(f'ATIVANDO ESTADO {sinal}')
+        
+        requisicao(urlNode2 + f'SINC?{mediaVermelhos}|{mediaResto}|{sinal}|', timeout=0.2)
+        requisicao(urlNode1 + f'SINC?{mediaVermelhos}|{mediaResto}|{sinal}|', timeout=0.2)
         return True
     
     # A CADA VARIAÇÃO DE SINAL, INCREMENTE A VARIÁVEL E RESETE A CONTAGEM
