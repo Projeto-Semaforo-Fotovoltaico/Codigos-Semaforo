@@ -5,7 +5,7 @@ WiFiServer server(80);
 #define LED 0
 
 // POIS SÃO ENVIADOS 2 SINAIS DE 0.2 SEGUNDOS ANTES DA ATIVAÇÃO
-#define DELAY 200
+#define DELAY 450
 
 // DECLARAÇÃO DA FUNÇÃO PARA CRIAÇÃO DE PÁGINA HTML
 void paginaHTML(WiFiClient *cl);

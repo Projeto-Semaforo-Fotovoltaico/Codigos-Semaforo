@@ -1,4 +1,3 @@
-from tkinter.tix import MAX
 import urllib.request, os, cv2
 import numpy as np
 from time import sleep, time
@@ -11,7 +10,7 @@ sinc = 0                # VARIÁVEL PARA CONTAGEM DE DETECÇÕES
 atualizacao = time()    # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
 vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
 estadoAnterior = False  # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
-MAX = 10
+MAX = 10                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
 
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
@@ -94,7 +93,6 @@ def processaSinal(vermelhos):
 # SE O SINAL MUDOU PARA VERMELHO, ARMAZENE O TEMPO DE SINAL NÃO VERMELHO (VICE-VERSA)
 def adicionarSinal(sinal):
     global temposVermelho, temposResto, sinc, atualizacao, estadoAnterior
-    tempo = time()
 
     if sinal:
         requisicao(urlNode2 + 'ATIVAR', timeout=0.2) # SINAL VERMELHO
