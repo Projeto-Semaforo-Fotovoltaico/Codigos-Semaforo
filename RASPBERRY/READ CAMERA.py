@@ -27,7 +27,7 @@ def run(url):
         try:
             tempo = time()
 
-            WEBinfo = urllib.request.urlopen(url, timeout=5)
+            WEBinfo = urllib.request.urlopen(url, timeout=2)
             img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
             img = cv2.imdecode(img, -1)
 
@@ -59,6 +59,6 @@ def run(url):
 
     cv2.destroyAllWindows()
 
-#hideTerminal()
+hideTerminal()
 conectarRede('ProjetoSemaforo')
 run('http://192.168.4.4/cam-hi.jpg')

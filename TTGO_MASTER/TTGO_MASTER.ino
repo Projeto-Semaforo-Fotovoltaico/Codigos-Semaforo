@@ -60,7 +60,8 @@ void sincMode(String req){
     Serial.println(tempoResto);
     Serial.println(estado);
     Serial.println();
-  
+
+    /*
     for(int x=0; x<100; x++){
         digitalWrite(LED, estado);
         delay(tempoVermelho-DELAY);
@@ -70,6 +71,7 @@ void sincMode(String req){
         delay(tempoResto-DELAY);
         estado = !estado;
     }
+    */
 }
 
 

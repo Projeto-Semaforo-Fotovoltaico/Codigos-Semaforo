@@ -4,7 +4,7 @@
     <meta charset='UTF-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Exercício 3</title>
+    <title>Site Semáforo</title>
 
     <style>
         body{
@@ -53,8 +53,8 @@
         }
         input.botoes{
             margin: 50px;
-            height:50px;
-            width:200px;
+            height: 50px;
+            width:  200px;
         }
         p.emoji{
             display: inline-block;
@@ -70,12 +70,11 @@
         <div class='info'>
             <p class='emoji' style='font-size: 20pt;'>&#128267;</p>           
             <p class='emoji'>Nível da Bateria:</p>
-            <p class='emoji' style='color: blue;'>100%</p>
+            <p id='NivelBateria' class='emoji' style='color: blue;'>100%</p>
 
-
-            <p class='emoji' style='font-size: 22pt; margin-left: 100px;'>&#128678;</p>
+            <p class='emoji' style='font-size: 22pt; margin-left: 70px;'>&#128678;</p>
             <p class='emoji'>Estado do Semáforo: </p>
-            <p class='emoji' style='color: red;'>VERMELHO</p>
+            <p id ='EstadoSemaforo' class='emoji' style='color: red;'>VERMELHO</p>
         </div>
 
         <div id='botoes'>
@@ -85,32 +84,17 @@
 
         <div class='info' style='text-align: center; margin-bottom: -45px;'>
             <p class='emoji' style='font-size: 20pt;'>&#128214;</p>          
-            Histórico
+            Informações
         </div>
-        <div id='historico' style='text-align: center; padding: 30px;'>
-            <select name='lista' id='lisaHistorico' size='20' 
-                style='width: 250px;  height: 200px; border: 1px solid black; margin-bottom: 40px;'>
-                <option>DETECTADO</option>
-                <option>NÃO DETECTADO</option>
-                <option>DETECTADO</option>
-                <option>NÃO DETECTADO</option>
-                <option>DETECTADO</option>
-                <option>NÃO DETECTADO</option>
-                <option>DETECTADO</option>
-                <option>NÃO DETECTADO</option>
-                <option>DETECTADO</option>
-                <option>NÃO DETECTADO</option>
-                <option>DETECTADO</option>
-                <option>NÃO DETECTADO</option>
-                <option>DETECTADO</option>
-                <option>NÃO DETECTADO</option>
-                <option>DETECTADO</option>
-                <option>NÃO DETECTADO</option>
-                <option>DETECTADO</option>
-                <option>NÃO DETECTADO</option>
-                <option>DETECTADO</option>
-                <option>NÃO DETECTADO</option>
-            </select>
+
+        <div id='infoSemaforo' style='text-align: left; padding: 60px;'>
+            <p style="display: inline-block;">Tempo Vermelhos: </p>
+            <p style="display: inline-block;" id="tempoVermelhos">10 segundos</p>
+
+            <p style="margin-bottom: -40px;"></p>
+
+            <p style="display: inline-block;">Tempo Resto: </p>
+            <p style="display: inline-block;" id="tempoResto">10 segundos</p>
         </div>
     </section>
 
@@ -119,15 +103,41 @@
     </footer>
     
     <script>
-        function validar(){
+        function validarUsuario(usuario, senha){
             let user = window.prompt('digite o usuário: ')
             let password = window.prompt('digite a senha: ')
 
-            if(user != 'projeto' || password != 'semaforo'){
+            if(user != usuario || password != senha){
                 window.alert('usuário ou senha inválidos...')
-                validar()
+                validarUsuario()
             }
-                
+        }
+
+        function validarEstado(estadoSemaforo){
+            txt = document.getElementById('EstadoSemaforo')
+
+            if(estadoSemaforo){
+                txt.innerHTML = 'VERMELHO'
+                txt.style.color = 'red'
+                return true
+            }
+            
+            txt.innerHTML = 'NÃO VERMELHO'
+            txt.style.color = 'blue'
+            return false
+        }
+
+        function validarBateria(nivelBateria){
+            txt = document.getElementById('NivelBateria')
+            txt.innerHTML = nivelBateria + '%'
+        }
+
+        function validarTempos(tempoVermelhos, tempoResto){
+            txt1 = document.getElementById('tempoVermelhos')
+            txt2 = document.getElementById('tempoResto')
+
+            txt1.innerText = tempoVermelhos/1000 + ' segundos'
+            txt2.innerText = tempoResto/1000 + ' segundos'
         }
 
         function ativar(){
@@ -140,7 +150,10 @@
             fetch('http://192.168.4.3/DESATIVAR')
         }
 
-        validar()
+        validarUsuario('projeto', 'semaforo')
+        validarEstado(0)
+        validarBateria(50)
+        validarTempos(10500, 15080)
     </script>
 </body>
 </html>
