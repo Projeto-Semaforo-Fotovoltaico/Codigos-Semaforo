@@ -71,6 +71,19 @@ void processaRequisicao(String requisicao){
 }
 
 
+// ATIVANDO OS LEDS PELO DELAY DE SINAL
+bool delaySemaforo(bool sinal, int tempoVermelho, int tempoResto){
+  digitalWrite(LED, sinal);
+        
+  if(sinal)
+    delay(tempoVermelho);
+  else
+    delay(tempoResto);
+    
+  return !sinal;
+}
+
+
 // FUNÇÃO PARA ATIVAR O MODO DE SINCRONIZAÇÃO SEM A CÂMERA
 void sincMode(String req){
     int K0 = req.indexOf("?");        // PROCURA O PRIMEIRO "?"
@@ -78,26 +91,29 @@ void sincMode(String req){
     int K2 = req.indexOf("|", K1+1);  // PROCURA A PARTIR DO PRIMEIRO "|"
     int K3 = req.indexOf("|", K2+1);  // PROCURA A PARTIR DO SEGUNDO  "|"
     
-    int  tempoVermelho = req.substring(K0+1, K1).toInt();
-    int  tempoResto    = req.substring(K1+1, K2).toInt();
-    bool estado        = req.substring(K2+1, K3).toInt();
+    int tempoVermelho = req.substring(K0+1, K1).toInt();
+    int tempoResto    = req.substring(K1+1, K2).toInt();
+    int erro          = req.substring(K2+1, K3).toInt();
     
     Serial.println(tempoVermelho);
     Serial.println(tempoResto);
-    Serial.println(estado);
+    Serial.println(erro);
     Serial.println();
 
-    // NA PRIMEIRA ATIVAÇÃO TEMOS QUE CONSIDERAR O DELAY
-    digitalWrite(LED, estado);
-    if(estado) delay(tempoVermelho-DELAY); else delay(tempoResto-DELAY);
-    estado = !estado;
-
+    // NA PRIMEIRA ATIVAÇÃO TEMOS QUE CONSIDERAR O DELAY DE ERRO
+    bool sinal = false;
+    digitalWrite(LED, sinal);
+    
+    delay(tempoVermelho-DELAY-erro);
+    int tempo = millis();
+    
     // MODO AUTOMÁTICO ONDE O DELAY DEPENDE DO ESTADO
-    for(int x=0; x<100; x++){
-        digitalWrite(LED, estado);
-        if(estado) delay(tempoVermelho); else delay(tempoResto);
-        estado = !estado;
-    }
+    while(millis() - tempo < 600000)
+        sinal = delaySemaforo(sinal, tempoVermelho, tempoResto);
+
+    // ESPERANDO O RASPBERRY LIGAR
+    for(int x=0; x<5; x++)
+        sinal = delaySemaforo(sinal, tempoVermelho, tempoResto);
 }
 
 

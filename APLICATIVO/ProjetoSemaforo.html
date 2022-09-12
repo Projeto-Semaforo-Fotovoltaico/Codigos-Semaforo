@@ -56,7 +56,7 @@
             height: 50px;
             width:  200px;
         }
-        p.emoji{
+        .alinhado{
             display: inline-block;
         }
     </style>
@@ -68,13 +68,13 @@
     
     <section>
         <div class='info'>
-            <p class='emoji' style='font-size: 20pt;'>&#128267;</p>           
-            <p class='emoji'>Nível da Bateria:</p>
-            <p id='NivelBateria' class='emoji' style='color: blue;'>100%</p>
+            <p class='alinhado' style='font-size: 20pt;'>&#128267;</p>           
+            <p class='alinhado'>Nível da Bateria:</p>
+            <p class='alinhado'id='NivelBateria' class='emoji' style='color: blue;'>100%</p>
 
-            <p class='emoji' style='font-size: 22pt; margin-left: 70px;'>&#128678;</p>
-            <p class='emoji'>Estado do Semáforo: </p>
-            <p id ='EstadoSemaforo' class='emoji' style='color: red;'>VERMELHO</p>
+            <p class='alinhado' style='font-size: 22pt; margin-left: 70px;'>&#128678;</p>
+            <p class='alinhado'>Estado do Semáforo: </p>
+            <p class='alinhado'id ='EstadoSemaforo' class='emoji' style='color: red;'>VERMELHO</p>
         </div>
 
         <div id='botoes'>
@@ -82,19 +82,31 @@
             <input class='botoes' type='button' value='BARRAR PASSAGEM' id='btnDesligar' onclick='desativar()'>
         </div>
 
-        <div class='info' style='text-align: center; margin-bottom: -45px;'>
-            <p class='emoji' style='font-size: 20pt;'>&#128214;</p>          
-            Informações
-        </div>
+        <div class='info' style='text-align: center; margin-bottom: 30px;'>
+            <p class='alinhado' style='font-size: 20pt;'>&#128214;</p>          
+            <p class='alinhado'>Informações</p> 
 
-        <div id='infoSemaforo' style='text-align: left; padding: 60px;'>
-            <p style="display: inline-block;">Tempo Vermelhos: </p>
-            <p style="display: inline-block;" id="tempoVermelhos">10 segundos</p>
+            <p style='margin-bottom: -40px;'></p>
 
-            <p style="margin-bottom: -40px;"></p>
+            <div class='alinhado' style='text-align: left; margin-right: 50px;'>
+                <p class='alinhado'>Tempo Vermelhos: </p>
+                <p class='alinhado' id='tempoVermelhos'>10 segundos</p>
+                
+                <p style='margin-top: -40px;'></p>
+    
+                <p class='alinhado'>Tempo Resto: </p>
+                <p class='alinhado' id='tempoResto'>10 segundos</p>
+            </div>
 
-            <p style="display: inline-block;">Tempo Resto: </p>
-            <p style="display: inline-block;" id="tempoResto">10 segundos</p>
+            <div class='alinhado' style='text-align: left;'>
+                <p class='alinhado'>Modo Sinal: </p>
+                <p class='alinhado' id='modo'>SÍNCRONO</p>
+                
+                <p style='margin-top: -40px;'></p>
+    
+                <p class='alinhado'>Estado: </p>
+                <p class='alinhado' id='func'>FUNCIONANDO</p>
+            </div>
         </div>
     </section>
 
@@ -113,6 +125,7 @@
             }
         }
 
+
         function validarEstado(estadoSemaforo){
             txt = document.getElementById('EstadoSemaforo')
 
@@ -127,10 +140,12 @@
             return false
         }
 
+
         function validarBateria(nivelBateria){
             txt = document.getElementById('NivelBateria')
             txt.innerHTML = nivelBateria + '%'
         }
+        
 
         function validarTempos(tempoVermelhos, tempoResto){
             txt1 = document.getElementById('tempoVermelhos')
@@ -140,20 +155,55 @@
             txt2.innerText = tempoResto/1000 + ' segundos'
         }
 
+        
+        function validarModo(modo){
+            txt = document.getElementById('modo')
+            
+            if(modo){
+                txt.innerHTML = 'SÍNCRONO'
+                txt.style.color = 'blue'
+                return true
+            }
+
+            txt.innerHTML = 'DETECTANDO'
+            txt.style.color = 'red'
+            return false
+        }
+
+
+        function validarFuncionamento(funcionamento){
+            txt = document.getElementById('func')
+
+            if(funcionamento){
+                txt.innerHTML = 'NORMAL'
+                txt.style.color = 'blue'
+                return true
+            }
+
+            txt.innerHTML = 'FALHA'
+            txt.style.color = 'red'
+            return false
+        }
+
+
         function ativar(){
             fetch('http://192.168.4.1/ATIVAR')
             fetch('http://192.168.4.3/ATIVAR')
         }
+
 
         function desativar(){
             fetch('http://192.168.4.1/DESATIVAR')
             fetch('http://192.168.4.3/DESATIVAR')
         }
 
+
         validarUsuario('projeto', 'semaforo')
         validarEstado(0)
         validarBateria(50)
         validarTempos(10500, 15080)
+        validarModo(0)
+        validarFuncionamento(0)
     </script>
 </body>
 </html>
