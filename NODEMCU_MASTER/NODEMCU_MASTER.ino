@@ -1,15 +1,33 @@
-#include <WiFi.h>
+#include <lwip/priv/tcp_priv.h>
+
+// LIMPANDO MEMÓRIA FLASH
+void tcpCleanup(){
+  while (tcp_tw_pcbs != NULL)
+    tcp_abort(tcp_tw_pcbs);
+}
+
+
+#include <ESP8266WiFi.h>
 WiFiServer server(80);
 
 // PINO DIGITAL CONECTADO AO RELÉ DAS LÂMPADAS E AO RASPBERRY
-#define LED 0
-#define RASPBERRY 1
+#define LED D0
+#define RASPBERRY D1
 
 // POIS SÃO ENVIADOS 2 SINAIS DE 0.2 SEGUNDOS ANTES DA ATIVAÇÃO
-#define DELAY 450
+#define DELAY 500
 
 // DECLARAÇÃO DA FUNÇÃO PARA CRIAÇÃO DE PÁGINA HTML
 void paginaHTML(WiFiClient *cl);
+
+// VARIÁVEIS GLOBAIS
+int tempoVermelho;
+int tempoResto;
+int erro;
+int nivelBateria;
+bool estadoSinal = false;
+bool modoSinal = false;
+bool estadoRaspberry = false;
 
 
 // CRIANDO E INICIANDO O ROTEADOR LOCAL
@@ -35,14 +53,23 @@ void processaRequisicao(String requisicao){
     Serial.print(F("REQUISICAO: "));
     Serial.println(requisicao);
 
-    if(requisicao.indexOf("ATIVAR") != -1)
+    if(requisicao.indexOf("ATIVAR") != -1){
         digitalWrite(LED, HIGH);
+        estadoSinal = true;
+        estadoRaspberry = true;
+    }
   
-    if(requisicao.indexOf("DESATIVAR") != -1)
+    if(requisicao.indexOf("DESATIVAR") != -1){
         digitalWrite(LED, LOW);
+        estadoSinal = false;
+        estadoRaspberry = true;
+    }
 
-    if(requisicao.indexOf("SINC?") != -1)
+    if(requisicao.indexOf("SINC?") != -1){
+        modoSinal = true;
         sincMode(requisicao);
+        modoSinal = false;
+    }
 }
 
 
@@ -66,9 +93,9 @@ void sincMode(String req){
     int K2 = req.indexOf("|", K1+1);  // PROCURA A PARTIR DO PRIMEIRO "|"
     int K3 = req.indexOf("|", K2+1);  // PROCURA A PARTIR DO SEGUNDO  "|"
     
-    int tempoVermelho = req.substring(K0+1, K1).toInt();
-    int tempoResto    = req.substring(K1+1, K2).toInt();
-    int erro          = req.substring(K2+1, K3).toInt();
+    tempoVermelho = req.substring(K0+1, K1).toInt();
+    tempoResto    = req.substring(K1+1, K2).toInt();
+    erro          = req.substring(K2+1, K3).toInt();
     
     Serial.println(tempoVermelho);
     Serial.println(tempoResto);
@@ -87,11 +114,12 @@ void sincMode(String req){
     while(millis() - tempo < 600000)
         sinal = delaySemaforo(sinal, tempoVermelho, tempoResto);
 
-    // ESPERANDO O RASPBERRY LIGAR
-    for(int x=0; x<5; x++)
-        sinal = delaySemaforo(sinal, tempoVermelho, tempoResto);
-
+    // LIGANDO O RASPBERRY NOVAMENTE
     digitalWrite(RASPBERRY, HIGH);
+
+    // ESPERANDO O RASPBERRY LIGAR
+    while(millis() - tempo < 60000)
+        sinal = delaySemaforo(sinal, tempoVermelho, tempoResto);
 }
 
 
@@ -101,15 +129,18 @@ void setup() {
     startServer("ProjetoSemaforo", "12345678");
     
     pinMode(LED, OUTPUT);
+    pinMode(LED_BUILTIN, OUTPUT);
     pinMode(RASPBERRY, OUTPUT);
     
     digitalWrite(LED, LOW);
     digitalWrite(RASPBERRY, HIGH);
+    digitalWrite(LED_BUILTIN, LOW);
 }
 
 
 // FUNÇÃO PRINCIPAL DO PROGRAMA
 void loop() {
+    tcpCleanup();
     WiFiClient client = server.available();
   
     // ENQUANTO NÃO FOR CONECTADO NO SERVIDOR CLIENTE
@@ -222,7 +253,7 @@ void paginaHTML(WiFiClient *cl){
   (*cl).println("<p class='alinhado'>Modo Sinal: </p>");
   (*cl).println("<p class='alinhado' id='modo'>SÍNCRONO</p>");
   (*cl).println("<p style='margin-top: -40px;'></p>");
-  (*cl).println("<p class='alinhado'>Estado: </p>");
+  (*cl).println("<p class='alinhado'>Estado Raspberry: </p>");
   (*cl).println("<p class='alinhado' id='func'>FUNCIONANDO</p>");
   (*cl).println("</div>");
   (*cl).println("</div>");
@@ -278,7 +309,7 @@ void paginaHTML(WiFiClient *cl){
   (*cl).println("txt.style.color = 'blue'");
   (*cl).println("return true");
   (*cl).println("}");
-  (*cl).println("txt.innerHTML = 'FALHA'");
+  (*cl).println("txt.innerHTML = 'SEM RESPOSTA'");
   (*cl).println("txt.style.color = 'red'");
   (*cl).println("return false");
   (*cl).println("}");
@@ -290,12 +321,13 @@ void paginaHTML(WiFiClient *cl){
   (*cl).println("fetch('http://192.168.4.1/DESATIVAR')");
   (*cl).println("fetch('http://192.168.4.3/DESATIVAR')");
   (*cl).println("}");
+  
   (*cl).println("validarUsuario('projeto', 'semaforo')");
-  (*cl).println("validarEstado(0)");
-  (*cl).println("validarBateria(50)");
-  (*cl).println("validarTempos(10500, 15080)");
-  (*cl).println("validarModo(0)");
-  (*cl).println("validarFuncionamento(0)");
+  (*cl).println("validarEstado(" + String(estadoSinal) + ")");
+  (*cl).println("validarBateria(" + String(nivelBateria) + ")");
+  (*cl).println("validarTempos(" + String(tempoVermelho/1000) + "," + String(tempoResto/1000) + ")");
+  (*cl).println("validarModo(0)" + String(modoSinal) + ")");
+  (*cl).println("validarFuncionamento(" + String(estadoRaspberry) +")");
   (*cl).println("</script>");
   (*cl).println("</body>");
   (*cl).println("</html>");

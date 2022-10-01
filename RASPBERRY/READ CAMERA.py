@@ -59,6 +59,6 @@ def run(url):
 
     cv2.destroyAllWindows()
 
-hideTerminal()
+#hideTerminal()
 conectarRede('ProjetoSemaforo')
 run('http://192.168.4.4/cam-hi.jpg')

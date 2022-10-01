@@ -104,7 +104,7 @@
                 
                 <p style='margin-top: -40px;'></p>
     
-                <p class='alinhado'>Estado: </p>
+                <p class='alinhado'>Estado Raspberry: </p>
                 <p class='alinhado' id='func'>FUNCIONANDO</p>
             </div>
         </div>
@@ -180,7 +180,7 @@
                 return true
             }
 
-            txt.innerHTML = 'FALHA'
+            txt.innerHTML = 'SEM RESPOSTA'
             txt.style.color = 'red'
             return false
         }
@@ -198,7 +198,7 @@
         }
 
 
-        validarUsuario('projeto', 'semaforo')
+        //validarUsuario('projeto', 'semaforo')
         validarEstado(0)
         validarBateria(50)
         validarTempos(10500, 15080)

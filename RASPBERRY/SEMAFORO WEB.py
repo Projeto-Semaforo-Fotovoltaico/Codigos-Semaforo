@@ -81,8 +81,6 @@ def juntarIntervalos(HSV):
 
 # RETORNANDO O ESTADO DE DETECÇÃO ENCONTRADO PARA PREENCHER O VETOR
 def processaSinal(vermelhos):
-    global vetor, i
-
     if vermelhos:
         print('SEMÁFORO VERMELHO DETECTADO!')
         return True
@@ -105,8 +103,8 @@ def adicionarSinal(sinal):
         requisicao(urlNode2 + 'DESATIVAR', timeout=0.2) # SINAL NÃO VERMELHO
         requisicao(urlNode1 + 'DESATIVAR', timeout=0.2) # SINAL NÃO VERMELHO
 
-        print(f'{atualizacao-erro} ADICIONADO AO SINAL VERMELHO')
-        temposVermelho.append(atualizacao-erro)
+        print(f'{atualizacao} ADICIONADO AO SINAL VERMELHO')
+        temposVermelho.append(atualizacao)
 
     sinc = sinc + 1          # INCREMENTANDO A SINCRONIZAÇÃO
     estadoAnterior = sinal   # ATUALIZANDO O ESTADO ANTERIOR
@@ -140,7 +138,7 @@ def verificarSincronismo(sinal):
     # SÓ PROSSEGUE SE O SINAL MUDAR DE ESTADO E DEMORAR MAIS QUE 7 SEGUNDOS (GARANTIA)
     if estadoAnterior == sinal or time() - atualizacao < 7:
         return False
-
+    
     # ENCONTRANDO E ATUALIZANDO O TEMPO DE VARIAÇÃO DE SINAL
     atualizacao = time() - atualizacao
     

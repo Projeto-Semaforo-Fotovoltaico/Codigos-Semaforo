@@ -11,10 +11,10 @@ void tcpCleanup(){
 WiFiServer server(80);
 
 // PINO DIGITAL CONECTADO AO RELÉ DAS LÂMPADAS
-#define LED 14
+#define LED D0
 
 // POIS SÃO ENVIADOS 2 SINAIS DE 0.2 SEGUNDOS ANTES DA ATIVAÇÃO
-#define DELAY 250
+#define DELAY 300
 
 // DECLARAÇÃO DA FUNÇÃO PARA CRIAÇÃO DE PÁGINA HTML
 void paginaHTML(WiFiClient *cl);
@@ -144,10 +144,11 @@ void loop() {
     // LENDO A REQUISIÇÃO RECEBIDA E AUMENTANDO i
     String requisicao = client.readStringUntil('\r');
     processaRequisicao(requisicao);
-
-    tcpCleanup();
-    paginaHTML(&client);
     
+    // SE FOR CHAMADO QUALQUER REQUISIÇÃO, IMPRIMA UMA RESPOSTA
+    if(requisicao.indexOf("/") != -1)
+        paginaHTML(&client);
+
     client.flush();
     client.stop();
 }
