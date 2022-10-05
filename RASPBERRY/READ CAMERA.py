@@ -49,7 +49,7 @@ def run(url):
         if key == ord('q'):
             break
 
-        if len(lista) == 100:
+        if len(lista) == -5:
             print()
             lista = np.array(lista)
             print('VALORES:       ', lista)

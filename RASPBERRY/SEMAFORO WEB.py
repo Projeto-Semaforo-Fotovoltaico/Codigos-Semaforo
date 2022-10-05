@@ -11,7 +11,13 @@ atualizacao = time()    # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
 vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
 estadoAnterior = False  # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
 erro = 0                # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEITURA)
-MAX = 10                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
+MAX = 30                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
+
+
+# VARIÁVEIS GLOBAIS PARA FUNÇÃO DE MÉDIA MÓVEL PARA FILTRO LÓGICO
+vetorLogico = np.zeros(10)
+soma = 0
+k = 0
 
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
@@ -79,9 +85,25 @@ def juntarIntervalos(HSV):
     return mask
 
 
+# FILTRANDO UMA FUNÇÃO POR MÉDIA MÓVEL
+def smooth(val):
+    global soma, k, vetorLogico
+
+    soma = soma - vetorLogico[k]
+    vetorLogico[k] = val
+
+    soma = soma + vetorLogico[k]
+    k = k + 1
+
+    if k == len(vetorLogico):
+        k = 0
+    
+    return soma/vetorLogico.size
+
+
 # RETORNANDO O ESTADO DE DETECÇÃO ENCONTRADO PARA PREENCHER O VETOR
 def processaSinal(vermelhos):
-    if vermelhos:
+    if smooth(int(vermelhos)) > 0.5:
         print('SEMÁFORO VERMELHO DETECTADO!')
         return True
     
