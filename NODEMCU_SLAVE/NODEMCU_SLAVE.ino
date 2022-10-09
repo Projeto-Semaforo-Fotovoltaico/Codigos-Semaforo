@@ -13,9 +13,6 @@ WiFiServer server(80);
 // PINO DIGITAL CONECTADO AO RELÉ DAS LÂMPADAS
 #define LED D0
 
-// POIS SÃO ENVIADOS 2 SINAIS DE 0.2 SEGUNDOS ANTES DA ATIVAÇÃO
-#define DELAY 300
-
 // DECLARAÇÃO DA FUNÇÃO PARA CRIAÇÃO DE PÁGINA HTML
 void paginaHTML(WiFiClient *cl);
 
@@ -104,7 +101,7 @@ void sincMode(String req){
     bool sinal = false;
     digitalWrite(LED, sinal);
     
-    delay(tempoVermelho-DELAY-erro);
+    delay(tempoVermelho-erro);
     int tempo = millis();
     
     // MODO AUTOMÁTICO ONDE O DELAY DEPENDE DO ESTADO
@@ -112,7 +109,7 @@ void sincMode(String req){
         sinal = delaySemaforo(sinal, tempoVermelho, tempoResto);
 
     // ESPERANDO O RASPBERRY LIGAR
-    for(int x=0; x<5; x++)
+    while(millis() - tempo < 90000)
         sinal = delaySemaforo(sinal, tempoVermelho, tempoResto);
 }
 

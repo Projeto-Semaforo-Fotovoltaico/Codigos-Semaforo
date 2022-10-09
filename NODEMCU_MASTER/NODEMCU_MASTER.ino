@@ -14,8 +14,6 @@ WiFiServer server(80);
 #define LED D0
 #define RASPBERRY D1
 
-// POIS SÃO ENVIADOS 2 SINAIS DE 0.2 SEGUNDOS ANTES DA ATIVAÇÃO
-#define DELAY 500
 
 // DECLARAÇÃO DA FUNÇÃO PARA CRIAÇÃO DE PÁGINA HTML
 void paginaHTML(WiFiClient *cl);
@@ -105,7 +103,7 @@ void sincMode(String req){
     // NA PRIMEIRA ATIVAÇÃO TEMOS QUE CONSIDERAR O DELAY DE ERRO
     bool sinal = false;
     digitalWrite(LED, sinal);
-    delay(tempoVermelho-DELAY-erro);
+    delay(tempoVermelho-erro);
     
     digitalWrite(RASPBERRY, LOW);
     int tempo = millis();
@@ -118,7 +116,7 @@ void sincMode(String req){
     digitalWrite(RASPBERRY, HIGH);
 
     // ESPERANDO O RASPBERRY LIGAR
-    while(millis() - tempo < 60000)
+    while(millis() - tempo < 90000)
         sinal = delaySemaforo(sinal, tempoVermelho, tempoResto);
 }
 
