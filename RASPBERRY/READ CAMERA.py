@@ -16,49 +16,45 @@ def conectarRede(networkName):
     os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
 
 
-def run(url):
-    lista = []
+def requisicao(url, timeout):
+    try:
+        return urllib.request.urlopen(url, timeout=timeout)
+    except Exception:
+        return False
 
-    # CRIANDO UMA JANELA PADRÃO MESMO SEM RECEBER A IMAGEM
-    cv2.namedWindow("WEB IMAGE", cv2.WINDOW_AUTOSIZE)
 
+urlCamera = 'http://192.168.68.103'
+
+
+def main():
+    global urlCamera
+
+    if not requisicao(urlCamera + ":81/stream", timeout=5):
+        print('Câmera não está funcionando... Resetando ESP32')
+        requisicao(urlCamera + r'\RESET', timeout=2)
+        return main()
+
+    cap = cv2.VideoCapture(urlCamera + ":81/stream")
     while True:
-        # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
-        try:
-            tempo = time()
-
-            WEBinfo = urllib.request.urlopen(url, timeout=2)
-            img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
-            img = cv2.imdecode(img, -1)
-
-            tempo = round(time() - tempo, 2)
-            lista.append(tempo)
-
-            print('TEMPO PARA LEITURA: ', tempo)
-
-        except:
-            print('sem leitura')
-            sleep(0.1)
+        erro = time()
+        if not cap.isOpened():
+            print('Erro na leitura da câmera...')
+            sleep(0.5)
             continue
+        
+        try:
+            ret, img = cap.read()
+            erro = time() - erro
 
-        # MOSTRANDO A IMAGEM
-        cv2.imshow('WEB IMAGE', img)
-        key = cv2.waitKey(1)
-
-        # SAINDO SE A TECLA 'q' FOR PRESSIONADA
-        if key == ord('q'):
-            break
-
-        if len(lista) == -5:
-            print()
-            lista = np.array(lista)
-            print('VALORES:       ', lista)
-            print('MÉDIA:         ', np.mean(lista))
-            print('DESVIO PADRÃO: ', np.std(lista))
-            break
-
-    cv2.destroyAllWindows()
+            print(f'erro: {erro:.5f}')
+            cv2.imshow("streaming", img)
+            cv2.waitKey(1)
+        except:
+            print('erro na leitura da câmera...')
+            return main()
+        
+        
 
 #hideTerminal()
-conectarRede('ProjetoSemaforo')
-run('http://192.168.4.4/cam-hi.jpg')
+#conectarRede('ProjetoSemaforo')
+main()

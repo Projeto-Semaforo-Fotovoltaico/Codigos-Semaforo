@@ -15,7 +15,7 @@ MAX = 30                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
 networkName = 'ProjetoSemaforo'
-urlCamera   = 'http://192.168.4.4/'
+urlCamera   = 'http://192.168.68.103'
 urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
 
@@ -146,26 +146,27 @@ def main():
     global networkName, vermelhos, urlCamera, erro
     conectarRede(networkName)
     sleep(5)
+    
+    if not requisicao(urlCamera + ":81/stream", timeout=5):
+        print('Câmera não está funcionando... Resetando ESP32')
+        requisicao(urlCamera + r'\RESET', timeout=2)
+        return main()
 
+    cap = cv2.VideoCapture(urlCamera + ":81/stream")
     while True:
-        # RECEBENDO AS INFORMAÇÕES CONTIDAS NO ENDEREÇO INDICADO
-        WEBinfo = requisicao(urlCamera + 'cam-hi.jpg', timeout=2)
-
-        if not WEBinfo:
-            print('Sem Resposta')
+        erro = time()
+        if not cap.isOpened():
+            print('Erro na leitura da câmera...')
+            sleep(0.5)
             continue
-
+        
         try:
-            # CONVERTENDO A INFORMAÇÃO PARA UM ARRAY DE BYTES TIPO UINT8
-            erro = time()
-            img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
-            img = cv2.imdecode(img, -1)
+            ret, img = cap.read()
             vermelhos = reconhecerVermelhos(img)
             erro = time() - erro
-
-        except Exception:
-            print('Erro ao passar imagem para Array!')
-            continue
+        except:
+            print('erro na leitura da câmera...')
+            return main()
 
         sinal = processaSinal(vermelhos)      
         if verificarSincronismo(sinal):
