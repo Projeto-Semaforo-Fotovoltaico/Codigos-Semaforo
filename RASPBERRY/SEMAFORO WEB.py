@@ -21,7 +21,7 @@ urlNode2    = 'http://192.168.4.3/'
 
 # VARIÁVEIS GLOBAIS PARA FUNÇÃO DE MÉDIA MÓVEL PARA FILTRO LÓGICO
 vetorLogico = np.zeros(8)
-erroTotal = 0.05 * 8 + 0.1
+erroTotal = 0.05 * len(vetorLogico) + 0.1
 soma = 0
 k = 0
 
