@@ -48,7 +48,7 @@ void processaRequisicao(String requisicao){
     Serial.println(requisicao);
 
     if(requisicao.indexOf("RASPBERRY") != -1)
-      estadoRaspberry = true;
+        estadoRaspberry = true;
 
     if(requisicao.indexOf("ATIVAR") != -1)
         sinal = true;
@@ -63,18 +63,18 @@ void processaRequisicao(String requisicao){
 
 // ATIVANDO OS LEDS PELO TEMPO DE SINAL
 void handleSinc(void){
-  if(!sinc)
-    return;
-  
-  if(sinal & millis() - contagem > tempoVermelho){
-    contagem = millis();
-    sinal = !sinal;
-  }
-  
-  if(!sinal & millis() - contagem > tempoResto){
-    contagem = millis();
-    sinal = !sinal;
-  }
+    if(!sinc)
+        return;
+    
+    if(sinal & millis() - contagem > tempoVermelho){
+        contagem = millis();
+        sinal = !sinal;
+    }
+    
+    if(!sinal & millis() - contagem > tempoResto){
+        contagem = millis();
+        sinal = !sinal;
+    }
 }
 
 
@@ -139,7 +139,7 @@ void loop(){
   
     // ENQUANTO NÃO FOR CONECTADO NO SERVIDOR CLIENTE
     if (!client)
-      return;
+        return;
     
     // LENDO A REQUISIÇÃO RECEBIDA E AUMENTANDO i
     String requisicao = client.readStringUntil('\r'); 
