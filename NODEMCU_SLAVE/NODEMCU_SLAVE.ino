@@ -19,56 +19,62 @@ WiFiServer server(80);
 void paginaHTML(WiFiClient *cl);
 
 // VARIÁVEIS GLOBAIS
-int tempoVermelho;
-int tempoResto;
-int erro;
-int nivelBateria;
-bool estadoRaspberry = false;
-
-int contagem;
-bool sinal = false;
-bool sinc = false;
+int tempoVermelho, tempoResto, erro, nivelBateria;
+bool estadoRaspberry, sinal, sinc;
+unsigned long contagem;
 
 
-// CRIANDO E INICIANDO O ROTEADOR LOCAL
-void startServer(char* nome, char* senha){
-    IPAddress staticIP(192, 168, 4, 2);  // IP ESTÁTICO
-    IPAddress gateway(192, 168, 4, 1);   // GATEWAY ESTÁTICO IP
-    IPAddress subnet(255, 255, 255, 0);  // OCULTAR SUB REDE
-  
-    // MODO DE TRABALHO WIFI VIA ACESS POINT
-    WiFi.mode(WIFI_AP);                 
-    WiFi.softAP(nome, senha);
+// CONECTANDO À REDE LOCAL PELO NOME E SENHA
+void conectarRede(char* nomeRede, char* senhaRede){
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(nomeRede, senhaRede);
+
+    // (OPCIONAL) CONFIGURAÇÕES SECUNDÁRIAS DO SERVIDOR LOCAL
+    IPAddress staticIP(192, 168, 4, 3);     // IP ESTÁTICO (USADO PARA AS REQUISIÇÕES)
+    IPAddress gateway(192, 168, 4, 2);      // GATEWAY ESTÁTICO IP
+    IPAddress subnet(255, 255, 255, 0);     // OCULTAR SUB REDE
     WiFi.config(staticIP, gateway, subnet);
+
+    while(WiFi.status() != WL_CONNECTED){
+        delay(500);
+        Serial.print(F("."));
+    }
+
+    server.begin();
+}
+
+
+// EXIBINDO INFORMAÇÕES DA REDE CONECTADA
+void exibirInformacoes(){
+    Serial.print(F("\n"));
+    
+    if (WiFi.status() == WL_CONNECTED)
+        Serial.print(F("WIFI CONECTADO!\n"));
+    else
+        Serial.print(F("WIFI NÃO CONECTADO!\n"));
   
-    // INICIALIZANDO O SERVIDOR E IMPRIMINDO INFORMAÇÕES
-    server.begin(); 
-    Serial.println("SERVER STARTED!"); 
-    Serial.println(WiFi.softAPIP());
+    Serial.print(F("ENDERECOIP: "));
+    Serial.print(WiFi.localIP());
+    Serial.print(F("\n"));
 }
 
 
 // PROCESSANDO A REQUISIÇÃO RECEBIDA PARA ACENDER OS LEDS
 void processaRequisicao(String requisicao){
-    Serial.print(F("REQUISICAO: "));
+    Serial.print("REQUISICAO: ");
     Serial.println(requisicao);
 
-    if(requisicao.indexOf("ATIVAR") != -1){
-        digitalWrite(LED, HIGH);
-        sinal = true;
-        estadoRaspberry = true;
-    }
-  
-    if(requisicao.indexOf("DESATIVAR") != -1){
-        digitalWrite(LED, LOW);
-        sinal = false;
-        estadoRaspberry = true;
-    }
+    if(requisicao.indexOf("RASPBERRY") != -1)
+      estadoRaspberry = true;
 
-    if(requisicao.indexOf("SINC?") != -1){
-        sinc = true;
+    if(requisicao.indexOf("ATIVAR") != -1)
+        sinal = true;
+  
+    if(requisicao.indexOf("DESATIVAR") != -1)
+        sinal = false;
+
+    if(requisicao.indexOf("SINC?") != -1)
         sincMode(requisicao);
-    }
 }
 
 
@@ -76,12 +82,6 @@ void processaRequisicao(String requisicao){
 void handleSinc(void){
   if(!sinc)
     return;
-  
-  if(sinal)
-    digitalWrite(LED, HIGH);
-  else
-    digitalWrite(LED, LOW);
-  
   
   if(sinal & millis() - contagem > tempoVermelho){
     contagem = millis();
@@ -98,9 +98,9 @@ void handleSinc(void){
 // FUNÇÃO PARA ATIVAR O MODO DE SINCRONIZAÇÃO SEM A CÂMERA
 void sincMode(String req){
     int K0 = req.indexOf("?");        // PROCURA O PRIMEIRO "?"
-    int K1 = req.indexOf("|", K0+1);  // PROCURA A PARTIR DE "?"
-    int K2 = req.indexOf("|", K1+1);  // PROCURA A PARTIR DO PRIMEIRO "|"
-    int K3 = req.indexOf("|", K2+1);  // PROCURA A PARTIR DO SEGUNDO  "|"
+    int K1 = req.indexOf("|", K0+1);  // PROCURA A PARTIR DE PRIMEIRO "|"
+    int K2 = req.indexOf("|", K1+1);  // PROCURA A PARTIR DO SEGUNDO  "|"
+    int K3 = req.indexOf("|", K2+1);  // PROCURA A PARTIR DO TERCEIRO "|"
     
     tempoVermelho = req.substring(K0+1, K1).toInt();
     tempoResto    = req.substring(K1+1, K2).toInt();
@@ -111,15 +111,16 @@ void sincMode(String req){
     Serial.println(erro);
     Serial.println();
 
+    // DESLIGANDO O RASPBERRY E ATUALIZANDO O SINAL PARA VERMELHO
     digitalWrite(RASPBERRY, LOW);
-    sinal = false;
-    sinc  = false;
+    estadoRaspberry = false;
+    sinal = true;
     
     // NA PRIMEIRA ATIVAÇÃO TEMOS QUE CONSIDERAR O DELAY DE ERRO  
     digitalWrite(LED, sinal);
     delay(tempoVermelho-erro);
-    
-    sinal = true;
+
+    sinal = false;
     sinc  = true;
     contagem = millis();
 }
@@ -128,11 +129,19 @@ void sincMode(String req){
 // ESTABELECENDO A COMUNICAÇÃO WIFI E MONITOR SERIAL
 void setup() {
     Serial.begin(9600); 
-    startServer("ProjetoSemaforo", "12345678");
+    
+    // CONECTANDO À REDE DO OUTRO NODEMCU MASTER
+    conectarRede("ProjetoSemaforo", "12345678");
+    exibirInformacoes();
+
+    nivelBateria = 50;
+    estadoRaspberry = false;
+    sinal = false;
+    sinc  = false;
     
     pinMode(LED, OUTPUT);
-    pinMode(LED_BUILTIN, OUTPUT);
     pinMode(RASPBERRY, OUTPUT);
+    pinMode(LED_BUILTIN, OUTPUT);
     
     digitalWrite(LED, LOW);
     digitalWrite(RASPBERRY, HIGH);
@@ -141,9 +150,11 @@ void setup() {
 
 
 // FUNÇÃO PRINCIPAL DO PROGRAMA
-void loop() {
+void loop(){
     tcpCleanup();
     handleSinc();
+
+    digitalWrite(LED, sinal);
     WiFiClient client = server.available();
   
     // ENQUANTO NÃO FOR CONECTADO NO SERVIDOR CLIENTE
@@ -166,23 +177,172 @@ void loop() {
 
 // MONTANDO A PÁGINA HTML PELO ENDEREÇO DE MEMÓRIA DO SERVIDOR CLIENTE
 void paginaHTML(WiFiClient *cl){
-    (*cl).println("HTTP/1.1 200 OK");
-    (*cl).println("Content-Type: text/html");
-    (*cl).println("Connection: keep-alive");
-    (*cl).println("Keep-Alive: timeout=0.001, max=1000");
-    (*cl).println();
-    
-    (*cl).println("<!DOCTYPE html>");
-    (*cl).println("<html>");
-   
-    (*cl).println("<head>");
-    (*cl).println("<title>ESP8266 via WEB</title>");
-    (*cl).println("</head>");
-
-    (*cl).println("<body>");
-    (*cl).print("<p>GPIO is now ");
-    (*cl).println("LOW</p>");
-
-    (*cl).println("</body>");
-    (*cl).println("</html>");
+  (*cl).println("<!DOCTYPE html>");
+  (*cl).println("<html lang='pt-br'>");
+  (*cl).println("<head>");
+  (*cl).println("<meta charset='UTF-8'>");
+  (*cl).println("<meta http-equiv='X-UA-Compatible' content='IE=edge'>");
+  (*cl).println("<meta name='viewport' content='width=device-width, initial-scale=1.0'>");
+  (*cl).println("<title>Site Semáforo</title>");
+  (*cl).println("<style>");
+  (*cl).println("body{");
+  (*cl).println("background-color: skyblue;");
+  (*cl).println("font: normal 15pt Arial;");
+  (*cl).println("text-align: center;");
+  (*cl).println("}");
+  (*cl).println("header{");
+  (*cl).println("text-align: center;");
+  (*cl).println("font: bold 18pt Arial;");
+  (*cl).println("padding: 20px;");
+  (*cl).println("width: 400px;");
+  (*cl).println("height: 40px;");
+  (*cl).println("line-height: 40px;");
+  (*cl).println("margin: auto;");
+  (*cl).println("color: black;");
+  (*cl).println("background-color: yellow;");
+  (*cl).println("border: 1px solid black;");
+  (*cl).println("border-radius: 10px;");
+  (*cl).println("}");
+  (*cl).println("section{");
+  (*cl).println("text-align: center;");
+  (*cl).println("margin: auto;");
+  (*cl).println("width: 750px;");
+  (*cl).println("margin-top: 20px;");
+  (*cl).println("padding: 20px;");
+  (*cl).println("background-color: white;");
+  (*cl).println("border: 1px solid black;");
+  (*cl).println("border-radius: 10px;");
+  (*cl).println("}");
+  (*cl).println("footer{");
+  (*cl).println("text-align: center;");
+  (*cl).println("color: white;");
+  (*cl).println("font: italic;");
+  (*cl).println("}");
+  (*cl).println("div{");
+  (*cl).println("text-align: left;");
+  (*cl).println("margin-bottom: -50px;");
+  (*cl).println("}");
+  (*cl).println("div#botoes{");
+  (*cl).println("text-align: center;");
+  (*cl).println("}");
+  (*cl).println("input.botoes{");
+  (*cl).println("margin: 50px;");
+  (*cl).println("height: 50px;");
+  (*cl).println("width:  200px;");
+  (*cl).println("}");
+  (*cl).println(".alinhado{");
+  (*cl).println("display: inline-block;");
+  (*cl).println("}");
+  (*cl).println("</style>");
+  (*cl).println("</head>");
+  (*cl).println("<body>");
+  (*cl).println("<header>");
+  (*cl).println("SEMÁFORO PARA PEDESTRES");
+  (*cl).println("</header>");
+  (*cl).println("<section>");
+  (*cl).println("<div class='info'>");
+  (*cl).println("<p class='alinhado' style='font-size: 20pt;'>&#128267;</p>");
+  (*cl).println("<p class='alinhado'>Nível da Bateria:</p>");
+  (*cl).println("<p class='alinhado'id='NivelBateria' class='emoji' style='color: blue;'>100%</p>");
+  (*cl).println("<p class='alinhado' style='font-size: 22pt; margin-left: 70px;'>&#128678;</p>");
+  (*cl).println("<p class='alinhado'>Estado do Semáforo: </p>");
+  (*cl).println("<p class='alinhado'id ='EstadoSemaforo' class='emoji' style='color: red;'>VERMELHO</p>");
+  (*cl).println("</div>");
+  (*cl).println("<div id='botoes'>");
+  (*cl).println("<input class='botoes' type='button' value='LIBERAR PASSAGEM' id='btnLigar' onclick='ativar()'>");
+  (*cl).println("<input class='botoes' type='button' value='BARRAR PASSAGEM' id='btnDesligar' onclick='desativar()'>");
+  (*cl).println("</div>");
+  (*cl).println("<div class='info' style='text-align: center; margin-bottom: 30px;'>");
+  (*cl).println("<p class='alinhado' style='font-size: 20pt;'>&#128214;</p>");
+  (*cl).println("<p class='alinhado'>Informações</p>");
+  (*cl).println("<p style='margin-bottom: -40px;'></p>");
+  (*cl).println("<div class='alinhado' style='text-align: left; margin-right: 50px;'>");
+  (*cl).println("<p class='alinhado'>Tempo Vermelhos: </p>");
+  (*cl).println("<p class='alinhado' id='tempoVermelhos'>10 segundos</p>");
+  (*cl).println("<p style='margin-top: -40px;'></p>");
+  (*cl).println("<p class='alinhado'>Tempo Resto: </p>");
+  (*cl).println("<p class='alinhado' id='tempoResto'>10 segundos</p>");
+  (*cl).println("</div>");
+  (*cl).println("<div class='alinhado' style='text-align: left;'>");
+  (*cl).println("<p class='alinhado'>Modo Sinal: </p>");
+  (*cl).println("<p class='alinhado' id='modo'>SÍNCRONO</p>");
+  (*cl).println("<p style='margin-top: -40px;'></p>");
+  (*cl).println("<p class='alinhado'>Estado Raspberry: </p>");
+  (*cl).println("<p class='alinhado' id='func'>FUNCIONANDO</p>");
+  (*cl).println("</div>");
+  (*cl).println("</div>");
+  (*cl).println("</section>");
+  (*cl).println("<footer>");
+  (*cl).println("<p> &copy; Projeto Semáforo </p>");
+  (*cl).println("</footer>");
+  (*cl).println("<script>");
+  (*cl).println("function validarUsuario(usuario, senha){");
+  (*cl).println("let user = window.prompt('digite o usuário: ')");
+  (*cl).println("let password = window.prompt('digite a senha: ')");
+  (*cl).println("if(user != usuario || password != senha){");
+  (*cl).println("window.alert('usuário ou senha inválidos...')");
+  (*cl).println("validarUsuario()");
+  (*cl).println("}");
+  (*cl).println("}");
+  (*cl).println("function validarEstado(estadoSemaforo){");
+  (*cl).println("txt = document.getElementById('EstadoSemaforo')");
+  (*cl).println("if(estadoSemaforo){");
+  (*cl).println("txt.innerHTML = 'VERMELHO'");
+  (*cl).println("txt.style.color = 'red'");
+  (*cl).println("return true");
+  (*cl).println("}");
+  (*cl).println("txt.innerHTML = 'NÃO VERMELHO'");
+  (*cl).println("txt.style.color = 'blue'");
+  (*cl).println("return false");
+  (*cl).println("}");
+  (*cl).println("function validarBateria(nivelBateria){");
+  (*cl).println("txt = document.getElementById('NivelBateria')");
+  (*cl).println("txt.innerHTML = nivelBateria + '%'");
+  (*cl).println("}");
+  (*cl).println("function validarTempos(tempoVermelhos, tempoResto){");
+  (*cl).println("txt1 = document.getElementById('tempoVermelhos')");
+  (*cl).println("txt2 = document.getElementById('tempoResto')");
+  (*cl).println("txt1.innerText = tempoVermelhos/1000 + ' segundos'");
+  (*cl).println("txt2.innerText = tempoResto/1000 + ' segundos'");
+  (*cl).println("}");
+  (*cl).println("function validarModo(modo){");
+  (*cl).println("txt = document.getElementById('modo')");
+  (*cl).println("if(modo){");
+  (*cl).println("txt.innerHTML = 'SÍNCRONO'");
+  (*cl).println("txt.style.color = 'blue'");
+  (*cl).println("return true");
+  (*cl).println("}");
+  (*cl).println("txt.innerHTML = 'DETECTANDO'");
+  (*cl).println("txt.style.color = 'red'");
+  (*cl).println("return false");
+  (*cl).println("}");
+  (*cl).println("function validarFuncionamento(funcionamento){");
+  (*cl).println("txt = document.getElementById('func')");
+  (*cl).println("if(funcionamento){");
+  (*cl).println("txt.innerHTML = 'NORMAL'");
+  (*cl).println("txt.style.color = 'blue'");
+  (*cl).println("return true");
+  (*cl).println("}");
+  (*cl).println("txt.innerHTML = 'SEM RESPOSTA'");
+  (*cl).println("txt.style.color = 'red'");
+  (*cl).println("return false");
+  (*cl).println("}");
+  (*cl).println("function ativar(){");
+  (*cl).println("fetch('http://192.168.4.1/ATIVAR')");
+  (*cl).println("fetch('http://192.168.4.3/ATIVAR')");
+  (*cl).println("}");
+  (*cl).println("function desativar(){");
+  (*cl).println("fetch('http://192.168.4.1/DESATIVAR')");
+  (*cl).println("fetch('http://192.168.4.3/DESATIVAR')");
+  (*cl).println("}");
+  
+  (*cl).println("validarUsuario('projeto', 'semaforo')");
+  (*cl).println("validarEstado(" + String((int) sinal) + ")");
+  (*cl).println("validarBateria(" + String((int) nivelBateria) + ")");
+  (*cl).println("validarTempos(" + String(tempoVermelho/1000) + "," + String(tempoResto/1000) + ")");
+  (*cl).println("validarModo(0)" + String((int) sinc) + ")");
+  (*cl).println("validarFuncionamento(" + String((int) estadoRaspberry) +")");
+  (*cl).println("</script>");
+  (*cl).println("</body>");
+  (*cl).println("</html>");
 }

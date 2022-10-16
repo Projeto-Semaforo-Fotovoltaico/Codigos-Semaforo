@@ -148,6 +148,11 @@ def main():
     conectarRede(networkName)
     sleep(5)
     
+    if not requisicao(urlNode1 + "RASPBERRY", timeout=5):
+        print('Erro na conexção com o NodeMCU Master!')
+        sleep(1)
+        return main()
+
     if not requisicao(urlCamera + ":81/stream", timeout=5):
         print('Câmera não está funcionando... Resetando ESP32')
         requisicao(urlCamera + r'\RESET', timeout=2)
