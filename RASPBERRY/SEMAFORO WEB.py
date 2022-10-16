@@ -10,7 +10,7 @@ sinc = 0                # VARIÁVEL PARA CONTAGEM DE DETECÇÕES
 atualizacao = time()    # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
 vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
 estadoAnterior = False  # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
-erro = 0                # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEITURA)
+erroLeitura = 0         # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEITURA)
 MAX = 20                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
@@ -21,7 +21,7 @@ urlNode2    = 'http://192.168.4.3/'
 
 # VARIÁVEIS GLOBAIS PARA FUNÇÃO DE MÉDIA MÓVEL PARA FILTRO LÓGICO
 vetorLogico = np.zeros(8)
-erroTotal = 0.05 * len(vetorLogico) + 0.1
+erroTotal   = 0.05 * len(vetorLogico) + 0.1
 soma = 0
 k = 0
 
@@ -109,7 +109,7 @@ def adicionarSinal(sinal):
 # ADICIONANDO OS TEMPOS EM QUE O SINAL VERMELHO FICOU DESATIVADO
 def verificarSincronismo(sinal):
     global atualizacao, sinc, temposVermelho, temposResto
-    global estadoAnterior, urlNode1, urlNode2, erro
+    global estadoAnterior, urlNode1, urlNode2, erroLeitura
 
     # PRIMERIA VEZ QUE ENTRA NA FUNÇÃO, ESTABELEÇA AS CONDIÇÕES INICIAIS
     if sinc == 0:
@@ -127,14 +127,14 @@ def verificarSincronismo(sinal):
     if sinc >= MAX and sinal:
         mediaVermelhos = int((treatData(temposVermelho[2:]) + erroTotal) * 1000)
         mediaResto     = int((treatData(temposResto[2:])    + erroTotal) * 1000)
-        erro  = int(erro*1000)
+        erroLeitura    = int(erroLeitura*1000)
 
         print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS:      {mediaVermelhos/1000}')
         print(f'MÉDIA DOS TEMPOS DE SINAIS NÃO VERMELHOS:  {mediaResto/1000}')
-        print(f'O TEMPO DE LEITURA DO ÚLTIMO SINAL FOI DE: {erro/1000}')
+        print(f'O TEMPO DE LEITURA DO ÚLTIMO SINAL FOI DE: {erroLeitura/1000}')
         
-        requisicao(urlNode1 + f'SINC?{mediaVermelhos}|{mediaResto}|{erro + 0.2}|', timeout=0.2)
-        requisicao(urlNode2 + f'SINC?{mediaVermelhos}|{mediaResto}{erro + 0.4}|', timeout=0.2)
+        requisicao(urlNode1 + f'SINC?{mediaVermelhos}|{mediaResto}|{erroLeitura + 200}|', timeout=0.2)
+        requisicao(urlNode2 + f'SINC?{mediaVermelhos}|{mediaResto}|{erroLeitura + 400}|', timeout=0.2)
         return True
     
     # A CADA VARIAÇÃO DE SINAL, INCREMENTE A VARIÁVEL E RESETE A CONTAGEM
@@ -144,7 +144,7 @@ def verificarSincronismo(sinal):
 
 # FUNÇÃO PRINCIPAL DO PROGRAMA NO MODO LOOP ATÉ O SINCRONISMO
 def main():
-    global networkName, vermelhos, urlCamera, erro
+    global networkName, vermelhos, urlCamera, erroLeitura
     conectarRede(networkName)
     sleep(5)
     
@@ -159,7 +159,7 @@ def main():
     requisicao(urlCamera + "/control?var=framesize&val=9", timeout=5)
 
     while True:
-        erro = time()
+        erroLeitura = time()
         if not cap.isOpened():
             print('Erro na leitura da câmera...')
             sleep(0.5)
@@ -168,7 +168,7 @@ def main():
         try:
             ret, img = cap.read()
             vermelhos = reconhecerVermelhos(img)
-            erro = time() - erro
+            erroLeitura = time() - erroLeitura
         except:
             print('erro na leitura da câmera...')
             return main()
