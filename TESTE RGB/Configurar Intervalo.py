@@ -3,8 +3,8 @@ import cv2, os
 import numpy as np
 from random import randint
 
-ponto1 = (100, 40)
-ponto2 = (140, 110)
+ponto1 = (370, 60)
+ponto2 = (430, 110)
 
 # 
 # 
@@ -56,7 +56,7 @@ def reconhecerVermelho(img):
     maskr = cv2.inRange(HSV, low, high)
 
     redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
-                                     param1=50, param2=10, minRadius=5, maxRadius=500)
+                                     param1=50, param2=10, minRadius=1, maxRadius=500)
 
     if type(redCircles).__module__ == np.__name__:
         for circulo in redCircles:
@@ -95,4 +95,4 @@ def fotos(endereco):
         print('.', end='')
 
 
-fotos('Teste\Teste5.png')
+fotos('Teste\Teste.png')

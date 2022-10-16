@@ -11,16 +11,17 @@ atualizacao = time()    # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
 vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
 estadoAnterior = False  # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
 erro = 0                # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEITURA)
-MAX = 30                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
+MAX = 20                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
 networkName = 'ProjetoSemaforo'
-urlCamera   = 'http://192.168.68.103'
+urlCamera   = 'http://192.168.4.4'
 urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
 
 # VARIÁVEIS GLOBAIS PARA FUNÇÃO DE MÉDIA MÓVEL PARA FILTRO LÓGICO
-vetorLogico = np.zeros(10)
+vetorLogico = np.zeros(8)
+erroTotal = 0.05 * 8 + 0.1
 soma = 0
 k = 0
 
@@ -124,16 +125,16 @@ def verificarSincronismo(sinal):
     
     # TOTAL DE VARIAÇÕES DE SINAL NECESSÁRIAS PARA SINCRONIZAÇÃO
     if sinc >= MAX and sinal:
-        mediaVermelhos = int(treatData(temposVermelho[2:]) * 1000)
-        mediaResto     = int(treatData(temposResto[2:])    * 1000)
-        erro  = int(erro*1000) + 200
+        mediaVermelhos = int(treatData(temposVermelho[2:]) * 1000 + erroTotal)
+        mediaResto     = int(treatData(temposResto[2:])    * 1000 + erroTotal)
+        erro  = int(erro*1000)
 
-        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS:     {mediaVermelhos/1000}')
-        print(f'MÉDIA DOS TEMPOS DE SINAIS NÃO VERMELHOS: {mediaResto/1000}')
+        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS:      {mediaVermelhos/1000}')
+        print(f'MÉDIA DOS TEMPOS DE SINAIS NÃO VERMELHOS:  {mediaResto/1000}')
         print(f'O TEMPO DE LEITURA DO ÚLTIMO SINAL FOI DE: {erro/1000}')
         
-        requisicao(urlNode2 + f'SINC?{mediaVermelhos}|{mediaResto}{erro + 0.2}|', timeout=0.2)
-        requisicao(urlNode1 + f'SINC?{mediaVermelhos}|{mediaResto}|{erro + 0.4}|', timeout=0.2)
+        requisicao(urlNode1 + f'SINC?{mediaVermelhos}|{mediaResto}|{erro + 0.2}|', timeout=0.2)
+        requisicao(urlNode2 + f'SINC?{mediaVermelhos}|{mediaResto}{erro + 0.4}|', timeout=0.2)
         return True
     
     # A CADA VARIAÇÃO DE SINAL, INCREMENTE A VARIÁVEL E RESETE A CONTAGEM
@@ -150,9 +151,13 @@ def main():
     if not requisicao(urlCamera + ":81/stream", timeout=5):
         print('Câmera não está funcionando... Resetando ESP32')
         requisicao(urlCamera + r'\RESET', timeout=2)
+        sleep(1)
         return main()
 
     cap = cv2.VideoCapture(urlCamera + ":81/stream")
+    requisicao(urlCamera + "/control?var=quality&val=30", timeout=5)
+    requisicao(urlCamera + "/control?var=framesize&val=9", timeout=5)
+
     while True:
         erro = time()
         if not cap.isOpened():

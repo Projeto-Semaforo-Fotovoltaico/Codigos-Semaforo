@@ -23,9 +23,11 @@ int tempoVermelho;
 int tempoResto;
 int erro;
 int nivelBateria;
-bool estadoSinal = false;
-bool modoSinal = false;
 bool estadoRaspberry = false;
+
+int contagem;
+bool sinal = false;
+bool sinc = false;
 
 
 // CRIANDO E INICIANDO O ROTEADOR LOCAL
@@ -53,34 +55,43 @@ void processaRequisicao(String requisicao){
 
     if(requisicao.indexOf("ATIVAR") != -1){
         digitalWrite(LED, HIGH);
-        estadoSinal = true;
+        sinal = true;
         estadoRaspberry = true;
     }
   
     if(requisicao.indexOf("DESATIVAR") != -1){
         digitalWrite(LED, LOW);
-        estadoSinal = false;
+        sinal = false;
         estadoRaspberry = true;
     }
 
     if(requisicao.indexOf("SINC?") != -1){
-        modoSinal = true;
+        sinc = true;
         sincMode(requisicao);
-        modoSinal = false;
     }
 }
 
 
-// ATIVANDO OS LEDS PELO DELAY DE SINAL
-bool delaySemaforo(bool sinal, int tempoVermelho, int tempoResto){
-  digitalWrite(LED, sinal);
-        
+// ATIVANDO OS LEDS PELO TEMPO DE SINAL
+void handleSinc(void){
+  if(!sinc)
+    return;
+  
   if(sinal)
-    delay(tempoVermelho);
+    digitalWrite(LED, HIGH);
   else
-    delay(tempoResto);
-    
-  return !sinal;
+    digitalWrite(LED, LOW);
+  
+  
+  if(sinal & millis() - contagem > tempoVermelho){
+    contagem = millis();
+    sinal = !sinal;
+  }
+  
+  if(!sinal & millis() - contagem > tempoResto){
+    contagem = millis();
+    sinal = !sinal;
+  }
 }
 
 
@@ -100,24 +111,17 @@ void sincMode(String req){
     Serial.println(erro);
     Serial.println();
 
-    // NA PRIMEIRA ATIVAÇÃO TEMOS QUE CONSIDERAR O DELAY DE ERRO
-    bool sinal = false;
+    digitalWrite(RASPBERRY, LOW);
+    sinal = false;
+    sinc  = false;
+    
+    // NA PRIMEIRA ATIVAÇÃO TEMOS QUE CONSIDERAR O DELAY DE ERRO  
     digitalWrite(LED, sinal);
     delay(tempoVermelho-erro);
     
-    digitalWrite(RASPBERRY, LOW);
-    int tempo = millis();
-    
-    // MODO AUTOMÁTICO ONDE O DELAY DEPENDE DO ESTADO
-    while(millis() - tempo < 600000)
-        sinal = delaySemaforo(sinal, tempoVermelho, tempoResto);
-
-    // LIGANDO O RASPBERRY NOVAMENTE
-    digitalWrite(RASPBERRY, HIGH);
-
-    // ESPERANDO O RASPBERRY LIGAR
-    while(millis() - tempo < 90000)
-        sinal = delaySemaforo(sinal, tempoVermelho, tempoResto);
+    sinal = true;
+    sinc  = true;
+    contagem = millis();
 }
 
 
@@ -139,6 +143,7 @@ void setup() {
 // FUNÇÃO PRINCIPAL DO PROGRAMA
 void loop() {
     tcpCleanup();
+    handleSinc();
     WiFiClient client = server.available();
   
     // ENQUANTO NÃO FOR CONECTADO NO SERVIDOR CLIENTE
@@ -321,11 +326,11 @@ void paginaHTML(WiFiClient *cl){
   (*cl).println("}");
   
   (*cl).println("validarUsuario('projeto', 'semaforo')");
-  (*cl).println("validarEstado(" + String(estadoSinal) + ")");
-  (*cl).println("validarBateria(" + String(nivelBateria) + ")");
+  (*cl).println("validarEstado(" + String((int) sinal) + ")");
+  (*cl).println("validarBateria(" + String((int) nivelBateria) + ")");
   (*cl).println("validarTempos(" + String(tempoVermelho/1000) + "," + String(tempoResto/1000) + ")");
-  (*cl).println("validarModo(0)" + String(modoSinal) + ")");
-  (*cl).println("validarFuncionamento(" + String(estadoRaspberry) +")");
+  (*cl).println("validarModo(0)" + String((int) sinc) + ")");
+  (*cl).println("validarFuncionamento(" + String((int) estadoRaspberry) +")");
   (*cl).println("</script>");
   (*cl).println("</body>");
   (*cl).println("</html>");

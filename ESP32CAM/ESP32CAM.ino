@@ -9,9 +9,6 @@ WiFiServer server(80);
 const char* ssid = "ProjetoSemaforo";
 const char* password = "12345678";
 
-//const char* ssid = "Leonan&Aline";
-//const char* password = "19021976";
-
 void startCameraServer();
 void conectarRede();
 void exibirInformacoes();
@@ -108,8 +105,9 @@ void setup() {
 void conectarRede(){
   WiFi.begin(ssid, password);
   WiFi.setSleep(false);
-  IPAddress staticIP(192, 168, 68, 103); // REQUISIÇÃO
-  IPAddress gateway(192, 168, 68, 104);     
+  
+  IPAddress staticIP(192, 168, 4, 4); // REQUISIÇÃO
+  IPAddress gateway(192, 168, 4, 5);     
   IPAddress subnet(255, 255, 255, 0);   
   WiFi.config(staticIP, gateway, subnet);
 

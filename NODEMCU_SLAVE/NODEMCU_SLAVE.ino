@@ -10,45 +10,41 @@ void tcpCleanup(){
 #include <ESP8266WiFi.h>
 WiFiServer server(80);
 
-// PINO DIGITAL CONECTADO AO RELÉ DAS LÂMPADAS
+// PINO DIGITAL CONECTADO AO RELÉ DAS LÂMPADAS E AO RASPBERRY
 #define LED D0
+#define RASPBERRY D1
+
 
 // DECLARAÇÃO DA FUNÇÃO PARA CRIAÇÃO DE PÁGINA HTML
 void paginaHTML(WiFiClient *cl);
 
+// VARIÁVEIS GLOBAIS
+int tempoVermelho;
+int tempoResto;
+int erro;
+int nivelBateria;
+bool estadoRaspberry = false;
 
-// CONECTANDO À REDE LOCAL PELO NOME E SENHA
-void conectarRede(char* nomeRede, char* senhaRede){
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(nomeRede, senhaRede);
-
-    // (OPCIONAL) CONFIGURAÇÕES SECUNDÁRIAS DO SERVIDOR LOCAL
-    IPAddress staticIP(192, 168, 4, 3);     // IP ESTÁTICO (USADO PARA AS REQUISIÇÕES)
-    IPAddress gateway(192, 168, 4, 2);      // GATEWAY ESTÁTICO IP
-    IPAddress subnet(255, 255, 255, 0);     // OCULTAR SUB REDE
-    WiFi.config(staticIP, gateway, subnet);
-
-    while(WiFi.status() != WL_CONNECTED){
-        delay(500);
-        Serial.print(F("."));
-    }
-
-    server.begin();
-}
+int contagem;
+bool sinal = false;
+bool sinc = false;
 
 
-// EXIBINDO INFORMAÇÕES DA REDE CONECTADA
-void exibirInformacoes(){
-    Serial.print(F("\n"));
-    
-    if (WiFi.status() == WL_CONNECTED)
-        Serial.print(F("WIFI CONECTADO!\n"));
-    else
-        Serial.print(F("WIFI NÃO CONECTADO!\n"));
+// CRIANDO E INICIANDO O ROTEADOR LOCAL
+void startServer(char* nome, char* senha){
+    IPAddress staticIP(192, 168, 4, 2);  // IP ESTÁTICO
+    IPAddress gateway(192, 168, 4, 1);   // GATEWAY ESTÁTICO IP
+    IPAddress subnet(255, 255, 255, 0);  // OCULTAR SUB REDE
   
-    Serial.print(F("ENDERECOIP: "));
-    Serial.print(WiFi.localIP());
-    Serial.print(F("\n"));
+    // MODO DE TRABALHO WIFI VIA ACESS POINT
+    WiFi.mode(WIFI_AP);                 
+    WiFi.softAP(nome, senha);
+    WiFi.config(staticIP, gateway, subnet);
+  
+    // INICIALIZANDO O SERVIDOR E IMPRIMINDO INFORMAÇÕES
+    server.begin(); 
+    Serial.println("SERVER STARTED!"); 
+    Serial.println(WiFi.softAPIP());
 }
 
 
@@ -56,28 +52,46 @@ void exibirInformacoes(){
 void processaRequisicao(String requisicao){
     Serial.print(F("REQUISICAO: "));
     Serial.println(requisicao);
-    
-    if(requisicao.indexOf("ATIVAR") != -1)
-        digitalWrite(LED, HIGH);
-  
-    if(requisicao.indexOf("DESATIVAR") != -1)
-        digitalWrite(LED, LOW);
 
-    if(requisicao.indexOf("SINC?") != -1)
+    if(requisicao.indexOf("ATIVAR") != -1){
+        digitalWrite(LED, HIGH);
+        sinal = true;
+        estadoRaspberry = true;
+    }
+  
+    if(requisicao.indexOf("DESATIVAR") != -1){
+        digitalWrite(LED, LOW);
+        sinal = false;
+        estadoRaspberry = true;
+    }
+
+    if(requisicao.indexOf("SINC?") != -1){
+        sinc = true;
         sincMode(requisicao);
+    }
 }
 
 
-// ATIVANDO OS LEDS PELO DELAY DE SINAL
-bool delaySemaforo(bool sinal, int tempoVermelho, int tempoResto){
-  digitalWrite(LED, sinal);
-        
+// ATIVANDO OS LEDS PELO TEMPO DE SINAL
+void handleSinc(void){
+  if(!sinc)
+    return;
+  
   if(sinal)
-    delay(tempoVermelho);
+    digitalWrite(LED, HIGH);
   else
-    delay(tempoResto);
-    
-  return !sinal;
+    digitalWrite(LED, LOW);
+  
+  
+  if(sinal & millis() - contagem > tempoVermelho){
+    contagem = millis();
+    sinal = !sinal;
+  }
+  
+  if(!sinal & millis() - contagem > tempoResto){
+    contagem = millis();
+    sinal = !sinal;
+  }
 }
 
 
@@ -88,50 +102,48 @@ void sincMode(String req){
     int K2 = req.indexOf("|", K1+1);  // PROCURA A PARTIR DO PRIMEIRO "|"
     int K3 = req.indexOf("|", K2+1);  // PROCURA A PARTIR DO SEGUNDO  "|"
     
-    int tempoVermelho = req.substring(K0+1, K1).toInt();
-    int tempoResto    = req.substring(K1+1, K2).toInt();
-    int erro          = req.substring(K2+1, K3).toInt();
+    tempoVermelho = req.substring(K0+1, K1).toInt();
+    tempoResto    = req.substring(K1+1, K2).toInt();
+    erro          = req.substring(K2+1, K3).toInt();
     
     Serial.println(tempoVermelho);
     Serial.println(tempoResto);
     Serial.println(erro);
     Serial.println();
 
-    // NA PRIMEIRA ATIVAÇÃO TEMOS QUE CONSIDERAR O DELAY DE ERRO
-    bool sinal = false;
+    digitalWrite(RASPBERRY, LOW);
+    sinal = false;
+    sinc  = false;
+    
+    // NA PRIMEIRA ATIVAÇÃO TEMOS QUE CONSIDERAR O DELAY DE ERRO  
     digitalWrite(LED, sinal);
-    
     delay(tempoVermelho-erro);
-    int tempo = millis();
     
-    // MODO AUTOMÁTICO ONDE O DELAY DEPENDE DO ESTADO
-    while(millis() - tempo < 600000)
-        sinal = delaySemaforo(sinal, tempoVermelho, tempoResto);
-
-    // ESPERANDO O RASPBERRY LIGAR
-    while(millis() - tempo < 90000)
-        sinal = delaySemaforo(sinal, tempoVermelho, tempoResto);
+    sinal = true;
+    sinc  = true;
+    contagem = millis();
 }
 
 
 // ESTABELECENDO A COMUNICAÇÃO WIFI E MONITOR SERIAL
 void setup() {
     Serial.begin(9600); 
-    pinMode(LED_BUILTIN, OUTPUT);
-    pinMode(LED, OUTPUT);
-
-    digitalWrite(LED_BUILTIN, LOW);
-    digitalWrite(LED, LOW);
+    startServer("ProjetoSemaforo", "12345678");
     
-    // CONECTANDO À REDE DO OUTRO NODEMCU MASTER
-    conectarRede("ProjetoSemaforo", "12345678");
-    exibirInformacoes();
+    pinMode(LED, OUTPUT);
+    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(RASPBERRY, OUTPUT);
+    
+    digitalWrite(LED, LOW);
+    digitalWrite(RASPBERRY, HIGH);
+    digitalWrite(LED_BUILTIN, LOW);
 }
 
 
 // FUNÇÃO PRINCIPAL DO PROGRAMA
 void loop() {
     tcpCleanup();
+    handleSinc();
     WiFiClient client = server.available();
   
     // ENQUANTO NÃO FOR CONECTADO NO SERVIDOR CLIENTE
@@ -139,13 +151,14 @@ void loop() {
       return;
     
     // LENDO A REQUISIÇÃO RECEBIDA E AUMENTANDO i
-    String requisicao = client.readStringUntil('\r');
+    String requisicao = client.readStringUntil('\r'); 
     processaRequisicao(requisicao);
-    
-    // SE FOR CHAMADO QUALQUER REQUISIÇÃO, IMPRIMA UMA RESPOSTA
-    if(requisicao.indexOf("/") != -1)
+
+    // SE FOR CHAMADO A PÁGINA DE MENU PRINCIPAL
+    if(requisicao.indexOf("/MENU") != -1)
         paginaHTML(&client);
 
+    // LIMPANDO O LIXO GERADO PELA REQUISIÇÃO E ENCERRANDO
     client.flush();
     client.stop();
 }
