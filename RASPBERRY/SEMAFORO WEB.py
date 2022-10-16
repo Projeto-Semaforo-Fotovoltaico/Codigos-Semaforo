@@ -125,8 +125,8 @@ def verificarSincronismo(sinal):
     
     # TOTAL DE VARIAÇÕES DE SINAL NECESSÁRIAS PARA SINCRONIZAÇÃO
     if sinc >= MAX and sinal:
-        mediaVermelhos = int(treatData(temposVermelho[2:]) * 1000 + erroTotal)
-        mediaResto     = int(treatData(temposResto[2:])    * 1000 + erroTotal)
+        mediaVermelhos = int((treatData(temposVermelho[2:]) + erroTotal) * 1000)
+        mediaResto     = int((treatData(temposResto[2:])    + erroTotal) * 1000)
         erro  = int(erro*1000)
 
         print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS:      {mediaVermelhos/1000}')
