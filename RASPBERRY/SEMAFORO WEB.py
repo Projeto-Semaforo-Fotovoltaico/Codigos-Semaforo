@@ -6,7 +6,7 @@ from time import sleep, time
 # VARIÁVEIS GLOBAIS PARA SEREM UTILIZADAS NAS FUNÇÕES DO ALGORÍTIMO
 temposVermelho = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO
 temposResto    = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES NÃO VERMELHO
-sinc = 0                # VARIÁVEL PARA CONTAGEM DE DETECÇÕES
+sinc = 0                # VARIÁVEL PARA CONTAGEM DE DETECÇÕES 
 atualizacao = time()    # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
 vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
 estadoAnterior = False  # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
@@ -20,27 +20,22 @@ urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
 
 # VARIÁVEIS GLOBAIS PARA FUNÇÃO DE MÉDIA MÓVEL PARA FILTRO LÓGICO
-vetorLogico = np.zeros(8)
+vetorLogico = np.zeros(10)
 erroTotal   = 0.05 * len(vetorLogico) + 0.1
 soma = 0
 k = 0
 
 # DADOS QUE SÃO OS INTERVALOS DE DETECÇÃO RGB
-dadosRGB = [
-    [[174, 132, 245], [184, 142, 255]],
-    [[171, 145, 254], [181, 155, 264]],
-    [[175, 169, 245], [185, 179, 255]],
-    [[168, 172, 253], [178, 182, 263]],
-    [[172, 189, 251], [182, 199, 261]],
-    [[170, 158, 255], [180, 168, 265]],
-    [[165, 139, 74], [175, 149, 84]],
-    [[174, 171, 247], [184, 181, 257]],
-    [[172, 207, 128], [182, 217, 138]],
-    [[170, 210, 128], [180, 220, 138]],
-    [[169, 212, 81], [179, 222, 91]],
-    [[170, 214, 249], [180, 224, 259]],
-    [[175, 233, 198], [185, 243, 208]],
-    [[175, 236, 179], [185, 246, 189]]
+intervalos = [
+    [[2, 205, 243], [12, 215, 253]],
+    [[2, 214, 243], [12, 224, 253]],
+    [[4, 207, 246], [14, 217, 256]],
+    [[4, 181, 254], [14, 191, 264]],
+    [[0, 197, 247], [10, 207, 257]],
+    [[4, 224, 220], [14, 234, 230]],
+    [[1, 186, 251], [11, 196, 261]],
+    [[4, 218, 231], [14, 228, 241]],
+    [[2, 191, 251], [12, 201, 261]]
 ]
 dadosMask = list(range(len(dadosRGB)))
 
@@ -146,22 +141,21 @@ def verificarSincronismo(sinal):
 def main():
     global networkName, vermelhos, urlCamera, erroLeitura
     conectarRede(networkName)
-    sleep(5)
     
-    if not requisicao(urlNode1 + "RASPBERRY", timeout=5):
-        print('Erro na conexção com o NodeMCU Master!')
-        sleep(1)
-        return main()
+    sleep(5)
+    requisicao(urlNode1 + "RASPBERRY", timeout=5)
 
-    if not requisicao(urlCamera + ":81/stream", timeout=5):
+    if not requisicao(urlCamera + ":81/stream", timeout=10):
         print('Câmera não está funcionando... Resetando ESP32')
         requisicao(urlCamera + r'\RESET', timeout=2)
-        sleep(1)
+        sleep(5)
         return main()
 
-    cap = cv2.VideoCapture(urlCamera + ":81/stream")
     requisicao(urlCamera + "/control?var=quality&val=30", timeout=5)
     requisicao(urlCamera + "/control?var=framesize&val=9", timeout=5)
+
+    sleep(1)
+    cap = cv2.VideoCapture(urlCamera + ":81/stream")
 
     while True:
         erroLeitura = time()

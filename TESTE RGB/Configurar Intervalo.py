@@ -3,8 +3,8 @@ import cv2, os
 import numpy as np
 from random import randint
 
-ponto1 = (370, 60)
-ponto2 = (430, 110)
+ponto1 = (95, 80)
+ponto2 = (220, 220)
 
 # 
 # 

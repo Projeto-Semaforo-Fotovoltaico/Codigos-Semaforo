@@ -191,8 +191,7 @@ void paginaHTML(WiFiClient *cl){
     (*cl).println("</head>");
 
     (*cl).println("<body>");
-    (*cl).print("<p>GPIO is now ");
-    (*cl).println("LOW</p>");
+    (*cl).print("<p>DISPOSITIVO FUNCIONANDO</p>");
 
     (*cl).println("</body>");
     (*cl).println("</html>");

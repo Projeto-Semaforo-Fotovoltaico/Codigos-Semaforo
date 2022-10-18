@@ -114,7 +114,7 @@ void setup() {
     Serial.begin(9600); 
     startServer("ProjetoSemaforo", "12345678");
 
-    nivelBateria = 50;
+    nivelBateria = 80;
     estadoRaspberry = false;
     sinal = false;
     sinc  = false;
@@ -124,8 +124,10 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     
     digitalWrite(LED, LOW);
-    digitalWrite(RASPBERRY, HIGH);
     digitalWrite(LED_BUILTIN, LOW);
+
+    delay(5000);
+    digitalWrite(RASPBERRY, HIGH);
 }
 
 
@@ -157,7 +159,7 @@ void loop(){
 
 // MONTANDO A PÁGINA HTML PELO ENDEREÇO DE MEMÓRIA DO SERVIDOR CLIENTE
 void paginaHTML(WiFiClient *cl){
-  (*cl).println("<!DOCTYPE html>");
+    (*cl).println("<!DOCTYPE html>");
   (*cl).println("<html lang='pt-br'>");
   (*cl).println("<head>");
   (*cl).println("<meta charset='UTF-8'>");
@@ -315,13 +317,30 @@ void paginaHTML(WiFiClient *cl){
   (*cl).println("fetch('http://192.168.4.1/DESATIVAR')");
   (*cl).println("fetch('http://192.168.4.3/DESATIVAR')");
   (*cl).println("}");
-  
   (*cl).println("validarUsuario('projeto', 'semaforo')");
-  (*cl).println("validarEstado(" + String((int) sinal) + ")");
-  (*cl).println("validarBateria(" + String((int) nivelBateria) + ")");
-  (*cl).println("validarTempos(" + String(tempoVermelho/1000) + "," + String(tempoResto/1000) + ")");
-  (*cl).println("validarModo(0)" + String((int) sinc) + ")");
-  (*cl).println("validarFuncionamento(" + String((int) estadoRaspberry) +")");
+
+  (*cl).print("validarEstado(");
+  (*cl).print(sinal);
+  (*cl).println(")");
+  
+  (*cl).print("validarBateria(");
+  (*cl).print(nivelBateria);
+  (*cl).println(")");
+  
+  (*cl).print("validarTempos(");
+  (*cl).print(tempoVermelho/1000);
+  (*cl).print(",");
+  (*cl).print(tempoResto/1000);
+  (*cl).println(")");
+  
+  (*cl).print("validarModo(");
+  (*cl).print(sinc);
+  (*cl).println(")");
+  
+  (*cl).print("validarFuncionamento(");
+  (*cl).print(estadoRaspberry);
+  (*cl).println(")");
+  
   (*cl).println("</script>");
   (*cl).println("</body>");
   (*cl).println("</html>");
