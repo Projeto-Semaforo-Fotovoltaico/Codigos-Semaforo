@@ -11,33 +11,48 @@ atualizacao = time()    # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
 vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
 estadoAnterior = False  # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
 erroLeitura = 0         # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEITURA)
-MAX = 20                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
+MAX = 30                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
-networkName = 'ProjetoSemaforo'
 urlCamera   = 'http://192.168.4.4'
 urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
 
 # VARIÁVEIS GLOBAIS PARA FUNÇÃO DE MÉDIA MÓVEL PARA FILTRO LÓGICO
-vetorLogico = np.zeros(10)
-erroTotal   = 0.05 * len(vetorLogico) + 0.1
+vetorLogico = np.zeros(5)
 soma = 0
 k = 0
 
 # DADOS QUE SÃO OS INTERVALOS DE DETECÇÃO RGB
-intervalos = [
-    [[2, 205, 243], [12, 215, 253]],
-    [[2, 214, 243], [12, 224, 253]],
-    [[4, 207, 246], [14, 217, 256]],
-    [[4, 181, 254], [14, 191, 264]],
-    [[0, 197, 247], [10, 207, 257]],
-    [[4, 224, 220], [14, 234, 230]],
-    [[1, 186, 251], [11, 196, 261]],
-    [[4, 218, 231], [14, 228, 241]],
-    [[2, 191, 251], [12, 201, 261]]
+dadosRGB = [
+    [[169, 158, 248], [179, 168, 258]],
+    [[170, 143, 254], [180, 153, 264]],
+    [[165, 116, 250], [175, 126, 260]],
+    [[174, 139, 249], [184, 149, 259]],
+    [[173, 131, 253], [183, 141, 263]],
+    [[167, 105, 254], [177, 115, 264]],
+    [[170, 147, 255], [180, 157, 265]],
+    [[167, 97, 245], [177, 107, 255]],
+    [[172, 187, 253], [182, 197, 263]],
+    [[173, 135, 255], [183, 145, 265]],
+    [[172, 95, 248], [182, 105, 258]],
+    [[2, 165, 251], [12, 175, 261]]
 ]
 dadosMask = list(range(len(dadosRGB)))
+
+
+# DANDO UM ZOOM NA IMAGEM PARA MELHOR DETECÇÃO
+def zoom(img, zoom_factor=1.5):
+    y_size = img.shape[0]
+    x_size = img.shape[1]
+
+    x1 = int(0.5*x_size*(1-1/zoom_factor))
+    x2 = int(x_size-0.5*x_size*(1-1/zoom_factor))
+    y1 = int(0.5*y_size*(1-1/zoom_factor))
+    y2 = int(y_size-0.5*y_size*(1-1/zoom_factor))
+
+    img_cropped = img[y1:y2,x1:x2]
+    return cv2.resize(img_cropped, None, fx=zoom_factor, fy=zoom_factor)
 
 
 # VERIFICANDO SE EXISTE ALGUM CÍRCULO VERMELHO NA IMAGEM
@@ -72,10 +87,10 @@ def juntarIntervalos(HSV):
 # RETORNANDO O ESTADO DE DETECÇÃO ENCONTRADO PARA PREENCHER O VETOR
 def processaSinal(vermelhos):
     if smooth(int(vermelhos)) > 0.5:
-        print('SEMÁFORO VERMELHO DETECTADO!')
+        #print('SEMÁFORO VERMELHO DETECTADO!')
         return True
     
-    print('SEMÁFORO VERMELHO NÃO DETECTADO!')
+    #print('SEMÁFORO VERMELHO NÃO DETECTADO!')
     return False
 
 
@@ -120,16 +135,16 @@ def verificarSincronismo(sinal):
     
     # TOTAL DE VARIAÇÕES DE SINAL NECESSÁRIAS PARA SINCRONIZAÇÃO
     if sinc >= MAX and sinal:
-        mediaVermelhos = int((treatData(temposVermelho[2:]) + erroTotal) * 1000)
-        mediaResto     = int((treatData(temposResto[2:])    + erroTotal) * 1000)
-        erroLeitura    = int(erroLeitura*1000)
+        erroTotal      = int(erroLeitura * len(vetorLogico) * 1000)
+        mediaVermelhos = int(treatData(temposVermelho[2:])  * 1000)
+        mediaResto     = int(treatData(temposResto[2:])     * 1000)
 
-        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS:      {mediaVermelhos/1000}')
-        print(f'MÉDIA DOS TEMPOS DE SINAIS NÃO VERMELHOS:  {mediaResto/1000}')
-        print(f'O TEMPO DE LEITURA DO ÚLTIMO SINAL FOI DE: {erroLeitura/1000}')
+        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS:         {mediaVermelhos/1000}')
+        print(f'MÉDIA DOS TEMPOS DE SINAIS NÃO VERMELHOS:     {mediaResto/1000}')
+        print(f'O TEMPO DE LEITURA DOS ÚLTIMOS SINAIS RAM DE: {erroTotal/1000}')
         
-        requisicao(urlNode1 + f'SINC?{mediaVermelhos}|{mediaResto}|{erroLeitura + 200}|', timeout=0.2)
-        requisicao(urlNode2 + f'SINC?{mediaVermelhos}|{mediaResto}|{erroLeitura + 400}|', timeout=0.2)
+        requisicao(urlNode1 + f'SINC?{mediaVermelhos}|{mediaResto}|{erroTotal + 200}|', timeout=0.2)
+        requisicao(urlNode2 + f'SINC?{mediaVermelhos}|{mediaResto}|{erroTotal + 400}|', timeout=0.2)
         return True
     
     # A CADA VARIAÇÃO DE SINAL, INCREMENTE A VARIÁVEL E RESETE A CONTAGEM
@@ -139,8 +154,7 @@ def verificarSincronismo(sinal):
 
 # FUNÇÃO PRINCIPAL DO PROGRAMA NO MODO LOOP ATÉ O SINCRONISMO
 def main():
-    global networkName, vermelhos, urlCamera, erroLeitura
-    conectarRede(networkName)
+    global vermelhos, urlCamera, erroLeitura
     
     sleep(5)
     requisicao(urlNode1 + "RASPBERRY", timeout=5)
@@ -151,7 +165,7 @@ def main():
         sleep(5)
         return main()
 
-    requisicao(urlCamera + "/control?var=quality&val=30", timeout=5)
+    requisicao(urlCamera + "/control?var=quality&val=10", timeout=5)
     requisicao(urlCamera + "/control?var=framesize&val=9", timeout=5)
 
     sleep(1)
@@ -166,6 +180,8 @@ def main():
         
         try:
             ret, img = cap.read()
+            img = zoom(img, 2)
+
             vermelhos = reconhecerVermelhos(img)
             erroLeitura = time() - erroLeitura
         except:
@@ -220,4 +236,5 @@ def conectarRede(networkName):
     os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
 
 
+conectarRede('ProjetoSemaforo')
 main()

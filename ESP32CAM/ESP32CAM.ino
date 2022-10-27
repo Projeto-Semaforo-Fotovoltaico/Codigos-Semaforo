@@ -11,9 +11,9 @@ const char* ssid = "ProjetoSemaforo";
 const char* password = "12345678";
 
 void configurarCamera(void);
-void startCameraServer();
-void conectarRede();
-void exibirInformacoes();
+void startCameraServer(void);
+void conectarRede(void);
+void exibirInformacoes(void);
 
 
 void setup() {
@@ -27,6 +27,7 @@ void setup() {
 
 
 void conectarRede(){
+    WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
     WiFi.setSleep(false);
     
@@ -36,8 +37,8 @@ void conectarRede(){
     WiFi.config(staticIP, gateway, subnet);
   
     while (WiFi.status() != WL_CONNECTED) {
-      delay(500);
       Serial.print(".");
+      delay(1000);
     }
     Serial.println("");
     Serial.println("WiFi connected");
@@ -54,8 +55,8 @@ void exibirInformacoes(){
 // CASO DESCONECTE COM A REDE, RESETAR O ESP
 void reconectarRede(void){
     if ((WiFi.status() != WL_CONNECTED)){
-        delay(10000);
         Serial.println("SEM CONEXÃO.... RESETANDO ESP");
+        delay(10000);
         ESP.restart();
     }
 }
@@ -73,7 +74,7 @@ void loop() {
     Serial.print("REQUISICAO: ");
     Serial.println(requisicao);
     
-    if(requisicao.indexOf("/RESET") != -1){
+    if(requisicao.indexOf("RESET") != -1){
       Serial.println("RESETANDO O ESP!");
       ESP.restart();
     }

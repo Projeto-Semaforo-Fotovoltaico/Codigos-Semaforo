@@ -65,13 +65,11 @@ void processaRequisicao(String requisicao){
 void handleSinc(void){
     if(!sinc)
         return;
+
+    bool condicao = (sinal & millis() - contagem > tempoVermelho) ||
+                    (!sinal & millis() - contagem > tempoResto);
     
-    if(sinal & millis() - contagem > tempoVermelho){
-        contagem = millis();
-        sinal = !sinal;
-    }
-    
-    if(!sinal & millis() - contagem > tempoResto){
+    if(condicao){
         contagem = millis();
         sinal = !sinal;
     }

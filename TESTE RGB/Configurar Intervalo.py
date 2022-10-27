@@ -3,19 +3,14 @@ import cv2, os
 import numpy as np
 from random import randint
 
-ponto1 = (95, 80)
-ponto2 = (220, 220)
+ponto1 = [40, 20]
+ponto2 = [100, 90]
+ 
 
+# [2, 165, 251], [12, 175, 261]
 # 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
+#
+#
 # 
 # 
 # 
@@ -70,6 +65,7 @@ def validarPosicao(img, redCircle, maskr, low, high):
     if (ponto1[0] <= redCircle[0] <= ponto2[0]) and (ponto1[1] <= redCircle[1] <= ponto2[1]):
         print()
         print('DETECTADO: ', f'[{low[0]}, {low[1]}, {low[2]}],', f'[{high[0]}, {high[1]}, {high[2]}]')
+        show(img)
         show(maskr)
         return redCircle
 
@@ -87,7 +83,6 @@ def fotos(endereco):
 
         if len(vermelho):
             img = desenharCirculo(img, vermelho)
-            show(img)
 
             print()
             print('CARREGANDO', end='')

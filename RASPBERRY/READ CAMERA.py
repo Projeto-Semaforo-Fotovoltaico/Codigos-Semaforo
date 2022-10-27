@@ -19,16 +19,29 @@ def requisicao(url, timeout):
         return False
 
 
+def zoom(img, zoom_factor=1.5):
+    y_size = img.shape[0]
+    x_size = img.shape[1]
+
+    x1 = int(0.5*x_size*(1-1/zoom_factor))
+    x2 = int(x_size-0.5*x_size*(1-1/zoom_factor))
+    y1 = int(0.5*y_size*(1-1/zoom_factor))
+    y2 = int(y_size-0.5*y_size*(1-1/zoom_factor))
+
+    img_cropped = img[y1:y2,x1:x2]
+    return cv2.resize(img_cropped, None, fx=zoom_factor, fy=zoom_factor)
+
+
 def main():
     global urlCamera
-
+    
     if not requisicao(urlCamera + ":81/stream", timeout=10):
         print('Câmera não está funcionando... Resetando ESP32')
-        requisicao(urlCamera + r'\RESET', timeout=2)
+        requisicao(urlCamera + r'\RESET', timeout=5)
         sleep(5)
         return main()
 
-    requisicao(urlCamera + "/control?var=quality&val=30", timeout=5)
+    requisicao(urlCamera + "/control?var=quality&val=10", timeout=5)
     requisicao(urlCamera + "/control?var=framesize&val=9", timeout=5)
 
     sleep(1)
@@ -43,6 +56,7 @@ def main():
         
         try:
             ret, img = cap.read()
+            img = zoom(img, 2)
             erro = time() - erro
 
             print(f'erro: {erro:.5f}')
@@ -54,4 +68,5 @@ def main():
         
 
 conectarRede('ProjetoSemaforo')
+sleep(5)
 main()

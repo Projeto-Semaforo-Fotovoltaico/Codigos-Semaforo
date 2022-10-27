@@ -82,13 +82,11 @@ void processaRequisicao(String requisicao){
 void handleSinc(void){
     if(!sinc)
         return;
+
+    bool condicao = (sinal & millis() - contagem >= tempoVermelho) ||
+                    (!sinal & millis() - contagem >= tempoResto);
     
-    if(sinal & millis() - contagem > tempoVermelho){
-        contagem = millis();
-        sinal = !sinal;
-    }
-    
-    if(!sinal & millis() - contagem > tempoResto){
+    if(condicao){
         contagem = millis();
         sinal = !sinal;
     }
@@ -129,23 +127,22 @@ void sincMode(String req){
 // ESTABELECENDO A COMUNICAÇÃO WIFI E MONITOR SERIAL
 void setup() {
     Serial.begin(9600); 
-    
-    // CONECTANDO À REDE DO OUTRO NODEMCU MASTER
-    conectarRede("ProjetoSemaforo", "12345678");
-    exibirInformacoes();
 
-    nivelBateria = 50;
-    estadoRaspberry = false;
-    sinal = false;
-    sinc  = false;
-    
     pinMode(LED, OUTPUT);
     pinMode(RASPBERRY, OUTPUT);
     pinMode(LED_BUILTIN, OUTPUT);
     
     digitalWrite(LED, LOW);
-    digitalWrite(RASPBERRY, HIGH);
     digitalWrite(LED_BUILTIN, LOW);
+    
+    // CONECTANDO À REDE DO OUTRO NODEMCU MASTER
+    conectarRede("ProjetoSemaforo", "12345678");
+    exibirInformacoes();
+
+    nivelBateria = 80;
+    estadoRaspberry = false;
+    sinal = false;
+    sinc  = false;
 }
 
 
