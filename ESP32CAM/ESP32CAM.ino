@@ -49,6 +49,7 @@ void conectarRede(){
 void exibirInformacoes(){
     Serial.print("CAMERA PRONTA, SERVIDOR EM: http://");
     Serial.print(WiFi.localIP());
+    Serial.println();
 }
 
 
@@ -57,7 +58,7 @@ void reconectarRede(void){
     if ((WiFi.status() != WL_CONNECTED)){
         Serial.println("SEM CONEXÃO.... RESETANDO ESP");
         delay(10000);
-        ESP.restart();
+        setup();
     }
 }
 
@@ -76,7 +77,7 @@ void loop() {
     
     if(requisicao.indexOf("RESET") != -1){
       Serial.println("RESETANDO O ESP!");
-      ESP.restart();
+      setup();
     }
   
     // SE FOR CHAMADO A PÁGINA DE MENU PRINCIPAL

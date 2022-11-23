@@ -93,7 +93,7 @@ void sincMode(String req){
     Serial.println();
 
     // DESLIGANDO O RASPBERRY E ATUALIZANDO O SINAL PARA VERMELHO
-    digitalWrite(RASPBERRY, LOW);
+    digitalWrite(RASPBERRY, !LOW);
     estadoRaspberry = false;
     sinal = true;
     
@@ -125,7 +125,7 @@ void setup() {
     digitalWrite(LED_BUILTIN, LOW);
 
     delay(5000);
-    digitalWrite(RASPBERRY, HIGH);
+    digitalWrite(RASPBERRY, !HIGH);
 }
 
 
