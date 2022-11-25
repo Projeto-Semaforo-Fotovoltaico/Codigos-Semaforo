@@ -16,7 +16,9 @@ MAX = 30                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
 
 # CONFIGURANDO OS PINOS DIGITAIS DO LED DO RASPBERRY
 LED = 12
-estadoLED = HIGH
+estadoLED = True
+
+cleanup()
 setMode(BOARD)
 setup(LED, OUT)
 output(LED, HIGH)
@@ -27,7 +29,7 @@ urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
 
 # VARIÁVEIS GLOBAIS PARA FUNÇÃO DE MÉDIA MÓVEL PARA FILTRO LÓGICO
-vetorLogico = np.zeros(5)
+vetorLogico = np.zeros(1)
 soma = 0
 k = 0
 
@@ -94,11 +96,13 @@ def juntarIntervalos(HSV):
 
 # RETORNANDO O ESTADO DE DETECÇÃO ENCONTRADO PARA PREENCHER O VETOR
 def processaSinal(vermelhos):
+    mudaLED()
+
     if smooth(int(vermelhos)) > 0.5:
-        #print('SEMÁFORO VERMELHO DETECTADO!')
+        print('SEMÁFORO VERMELHO DETECTADO!')
         return True
     
-    #print('SEMÁFORO VERMELHO NÃO DETECTADO!')
+    print('SEMÁFORO VERMELHO NÃO DETECTADO!')
     return False
 
 
@@ -164,7 +168,7 @@ def verificarSincronismo(sinal):
 def mudaLED():
     global estadoLED
     
-    estadoLED = HIGH if estadoLED == LOW else HIGH
+    estadoLED = not estadoLED
     output(LED, estadoLED)
 
 
@@ -175,42 +179,32 @@ def main():
     sleep(5)
     requisicao(urlNode1 + "RASPBERRY", timeout=5)
 
-    if not requisicao(urlCamera + ":81/stream", timeout=10):
-        print('Câmera não está funcionando... Resetando ESP32')
-        requisicao(urlCamera + r'\RESET', timeout=2)
-        sleep(5)
-        return main()
-
-    requisicao(urlCamera + "/control?var=quality&val=10", timeout=5)
-    requisicao(urlCamera + "/control?var=framesize&val=9", timeout=5)
-
-    sleep(1)
-    cap = cv2.VideoCapture(urlCamera + ":81/stream")
-
     while True:
         erroLeitura = time()
-        if not cap.isOpened():
-            print('Erro na leitura da câmera...')
-            sleep(0.5)
-            continue
-        
-        try:
-            ret, img = cap.read()
-            img = zoom(img, 2)
 
+        WEBinfo = requisicao(urlCamera, timeout=5)
+        if not WEBinfo:
+            print('erro na leitura da camera...')
+            continue
+
+        try:
+            img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
+            img = cv2.imdecode(img, -1)
+
+            img = zoom(img, 2)
             vermelhos = reconhecerVermelhos(img)
-            erroLeitura = time() - erroLeitura
         except:
             print('erro na leitura da câmera...')
-            return main()
+            continue
 
-        sinal = processaSinal(vermelhos)   
-        mudaLED()
+        sinal = processaSinal(vermelhos)      
+        erroLeitura = time() - erroLeitura
 
         if verificarSincronismo(sinal):
             cleanup()
             exit()
             break
+            
 
 
 # ENVIAR UMA REQUISIÇÃO PARA UM LINK COM UM TEMPO MÁXIMO DE RESPOSTA

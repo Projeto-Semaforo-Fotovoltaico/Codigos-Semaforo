@@ -5,7 +5,7 @@ import os
 from time import sleep
 from time import time
 
-urlCamera = 'http://192.168.4.4'
+urlCamera = 'http://192.168.4.4/cam-hi.jpg'
 
 
 def conectarRede(networkName):
@@ -34,28 +34,20 @@ def zoom(img, zoom_factor=1.5):
 
 def main():
     global urlCamera
-    
-    if not requisicao(urlCamera + ":81/stream", timeout=10):
-        print('Câmera não está funcionando... Resetando ESP32')
-        requisicao(urlCamera + r'\RESET', timeout=5)
-        sleep(5)
-        return main()
-
-    requisicao(urlCamera + "/control?var=quality&val=10", timeout=5)
-    requisicao(urlCamera + "/control?var=framesize&val=9", timeout=5)
-
     sleep(1)
-    cap = cv2.VideoCapture(urlCamera + ":81/stream")
 
     while True:
         erro = time()
-        if not cap.isOpened():
-            print('Erro na leitura da câmera...')
-            sleep(0.5)
+
+        WEBinfo = requisicao(urlCamera, timeout=5)
+        if not WEBinfo:
+            print('erro na leitura da camera...')
             continue
-        
+
         try:
-            ret, img = cap.read()
+            img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
+            img = cv2.imdecode(img, -1)
+
             img = zoom(img, 2)
             erro = time() - erro
 
@@ -64,7 +56,7 @@ def main():
             cv2.waitKey(1)
         except:
             print('erro na leitura da câmera...')
-            return main()
+            continue
         
 
 conectarRede('ProjetoSemaforo')
