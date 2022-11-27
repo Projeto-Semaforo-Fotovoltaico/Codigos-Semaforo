@@ -1,4 +1,4 @@
-import urllib.request, os, cv2
+import requests, os, cv2
 import numpy as np
 from time import sleep, time
 
@@ -15,6 +15,7 @@ MAX = 30                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
 urlCamera   = 'http://192.168.4.4/cam-hi.jpg'
+urlCamera   = 'https://pyimagesearch.com/wp-content/uploads/2015/01/opencv_logo.png'
 urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
 
@@ -32,11 +33,11 @@ dadosRGB = [
     [[173, 131, 253], [183, 141, 263]],
     [[167, 105, 254], [177, 115, 264]],
     [[170, 147, 255], [180, 157, 265]],
-    [[167, 97, 245], [177, 107, 255]],
+    [[167, 97, 245],  [177, 107, 255]],
     [[172, 187, 253], [182, 197, 263]],
     [[173, 135, 255], [183, 145, 265]],
-    [[172, 95, 248], [182, 105, 258]],
-    [[2, 165, 251], [12, 175, 261]]
+    [[172, 95, 248],  [182, 105, 258]],
+    [[2, 165, 251],   [12, 175, 261]]
 ]
 dadosMask = list(range(len(dadosRGB)))
 
@@ -158,17 +159,13 @@ def main():
     
     sleep(5)
     requisicao(urlNode1 + "RASPBERRY", timeout=5)
-
+    
     while True:
         erroLeitura = time()
-
-        WEBinfo = requisicao(urlCamera, timeout=5)
-        if not WEBinfo:
-            print('erro na leitura da camera...')
-            continue
-
+        
         try:
-            img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
+            WEBinfo = requisicao(urlCamera, timeout=0.5)
+            img = np.array(bytearray(WEBinfo.content), dtype=np.uint8)
             img = cv2.imdecode(img, -1)
 
             img = zoom(img, 2)
@@ -187,7 +184,7 @@ def main():
 # ENVIAR UMA REQUISIÇÃO PARA UM LINK COM UM TEMPO MÁXIMO DE RESPOSTA
 def requisicao(url, timeout):
     try:
-        return urllib.request.urlopen(url, timeout=timeout)
+        return requests.get(url, timeout=timeout)
     except Exception:
         return False
 
@@ -227,5 +224,5 @@ def conectarRede(networkName):
     os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
 
 
-conectarRede('ProjetoSemaforo')
+#conectarRede('ProjetoSemaforo')
 main()

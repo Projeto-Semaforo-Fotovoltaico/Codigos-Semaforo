@@ -1,4 +1,4 @@
-import urllib.request, os, cv2
+import requests, os, cv2
 import numpy as np
 from time import sleep, time
 from RPi.GPIO import *
@@ -19,19 +19,14 @@ LED = 12
 estadoLED = True
 
 cleanup()
-setMode(BOARD)
+setmode(BOARD)
 setup(LED, OUT)
 output(LED, HIGH)
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
-urlCamera   = 'http://192.168.4.4'
+urlCamera   = 'http://192.168.4.4/cam-hi.jpg'
 urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
-
-# VARIÁVEIS GLOBAIS PARA FUNÇÃO DE MÉDIA MÓVEL PARA FILTRO LÓGICO
-vetorLogico = np.zeros(1)
-soma = 0
-k = 0
 
 # DADOS QUE SÃO OS INTERVALOS DE DETECÇÃO RGB
 dadosRGB = [
@@ -98,7 +93,7 @@ def juntarIntervalos(HSV):
 def processaSinal(vermelhos):
     mudaLED()
 
-    if smooth(int(vermelhos)) > 0.5:
+    if vermelhos:
         print('SEMÁFORO VERMELHO DETECTADO!')
         return True
     
@@ -147,7 +142,7 @@ def verificarSincronismo(sinal):
     
     # TOTAL DE VARIAÇÕES DE SINAL NECESSÁRIAS PARA SINCRONIZAÇÃO
     if sinc >= MAX and sinal:
-        erroTotal      = int(erroLeitura * len(vetorLogico) * 1000)
+        erroTotal      = int((erroLeitura) * 1000)
         mediaVermelhos = int(treatData(temposVermelho[2:])  * 1000)
         mediaResto     = int(treatData(temposResto[2:])     * 1000)
 
@@ -182,13 +177,9 @@ def main():
     while True:
         erroLeitura = time()
 
-        WEBinfo = requisicao(urlCamera, timeout=5)
-        if not WEBinfo:
-            print('erro na leitura da camera...')
-            continue
-
         try:
-            img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
+            WEBinfo = requisicao(urlCamera, timeout=0.5)
+            img = np.array(bytearray(WEBinfo.content), dtype=np.uint8)
             img = cv2.imdecode(img, -1)
 
             img = zoom(img, 2)
@@ -204,13 +195,12 @@ def main():
             cleanup()
             exit()
             break
-            
 
 
 # ENVIAR UMA REQUISIÇÃO PARA UM LINK COM UM TEMPO MÁXIMO DE RESPOSTA
 def requisicao(url, timeout):
     try:
-        return urllib.request.urlopen(url, timeout=timeout)
+        return requests.get(url, timeout=timeout)
     except Exception:
         return False
 
@@ -227,22 +217,6 @@ def treatData(list):
 
     array = array[(array > lower) & (array < upper)]
     return np.mean(array)
-
-
-# FILTRANDO UMA FUNÇÃO POR MÉDIA MÓVEL
-def smooth(val):
-    global soma, k, vetorLogico
-
-    soma = soma - vetorLogico[k]
-    vetorLogico[k] = val
-
-    soma = soma + vetorLogico[k]
-    k = k + 1
-
-    if k == len(vetorLogico):
-        k = 0
-    
-    return soma/vetorLogico.size
 
 
 main()
