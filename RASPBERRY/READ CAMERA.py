@@ -5,7 +5,7 @@ import os
 from time import sleep
 from time import time
 
-urlCamera = 'https://pyimagesearch.com/wp-content/uploads/2015/01/opencv_logo.png'
+urlCamera = 'http://192.168.4.4/cam-hi.jpg'
 
 
 def conectarRede(networkName):

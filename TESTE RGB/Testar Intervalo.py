@@ -38,7 +38,7 @@ def juntarIntervalos(HSV):
         high = np.array(intervalos[c][1])
         intervalos[c] = cv2.inRange(HSV, low, high)
 
-    mask = intervalos[0]
+    mask = 0
     for c in range(1, len(intervalos)):
         mask = cv2.add(mask, intervalos[c])
 

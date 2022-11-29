@@ -15,7 +15,7 @@ MAX = 30                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
 urlCamera   = 'http://192.168.4.4/cam-hi.jpg'
-urlCamera   = 'https://pyimagesearch.com/wp-content/uploads/2015/01/opencv_logo.png'
+#urlCamera   = 'http://pyimagesearch.com/wp-content/uploads/2015/01/opencv_logo.png'
 urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
 
@@ -25,7 +25,7 @@ soma = 0
 k = 0
 
 # DADOS QUE SÃO OS INTERVALOS DE DETECÇÃO RGB
-dadosRGB = [
+dadosRGB = np.array([
     [[169, 158, 248], [179, 168, 258]],
     [[170, 143, 254], [180, 153, 264]],
     [[165, 116, 250], [175, 126, 260]],
@@ -36,10 +36,19 @@ dadosRGB = [
     [[167, 97, 245],  [177, 107, 255]],
     [[172, 187, 253], [182, 197, 263]],
     [[173, 135, 255], [183, 145, 265]],
-    [[172, 95, 248],  [182, 105, 258]],
-    [[2, 165, 251],   [12, 175, 261]]
-]
-dadosMask = list(range(len(dadosRGB)))
+    [[172, 95, 248],  [182, 105, 258]]
+])
+
+# CRIANDO UMA IMAGEM QUE APRESENTA APENAS O INTERVALO RGB ESCOLHIDO
+def juntarIntervalos(HSV):
+    global dadosRGB
+    
+    mask = 0
+    for c in range(len(dadosRGB)):
+        low, high  = dadosRGB[c]
+        mask = cv2.add(mask, cv2.inRange(HSV, low, high))
+    
+    return mask
 
 
 # DANDO UM ZOOM NA IMAGEM PARA MELHOR DETECÇÃO
@@ -68,21 +77,6 @@ def reconhecerVermelhos(img):
         return True
 
     return False
-
-
-# CRIANDO UMA IMAGEM QUE APRESENTA APENAS O INTERVALO RGB ESCOLHIDO
-def juntarIntervalos(HSV):
-    global dadosRGB, dadosMask
-
-    for c in range(len(dadosRGB)):
-        low  = np.array(dadosRGB[c][0])
-        high = np.array(dadosRGB[c][1])
-        dadosMask[c] = cv2.inRange(HSV, low, high)
-
-    mask = 0
-    for c in range(len(dadosRGB)):
-        mask = cv2.add(mask, dadosMask[c])
-    return mask
 
 
 # RETORNANDO O ESTADO DE DETECÇÃO ENCONTRADO PARA PREENCHER O VETOR
@@ -224,5 +218,5 @@ def conectarRede(networkName):
     os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
 
 
-#conectarRede('ProjetoSemaforo')
+conectarRede('ProjetoSemaforo')
 main()
