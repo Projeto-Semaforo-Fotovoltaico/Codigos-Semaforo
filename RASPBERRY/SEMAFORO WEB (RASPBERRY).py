@@ -12,7 +12,7 @@ atualizacao = time()    # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
 vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
 estadoAnterior = False  # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
 erroLeitura = 0         # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEITURA)
-MAX = 30                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
+MAX = 12                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
 
 # CONFIGURANDO OS PINOS DIGITAIS DO LED DO RASPBERRY
 LED = 12
@@ -138,7 +138,7 @@ def verificarSincronismo(sinal):
     
     # TOTAL DE VARIAÇÕES DE SINAL NECESSÁRIAS PARA SINCRONIZAÇÃO
     if sinc >= MAX and sinal:
-        erroTotal      = int((erroLeitura) * 1000)
+        erroTotal      = int(erroLeitura * 1000) + 3200
         mediaVermelhos = int(treatData(temposVermelho[2:])  * 1000)
         mediaResto     = int(treatData(temposResto[2:])     * 1000)
 
