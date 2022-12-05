@@ -59,6 +59,6 @@ def main():
             continue
         
 
-#conectarRede('ProjetoSemaforo')
+conectarRede('ProjetoSemaforo')
 #sleep(5)
 main()

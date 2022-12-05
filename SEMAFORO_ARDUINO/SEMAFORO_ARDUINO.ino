@@ -7,8 +7,10 @@ int amarelo  = 11;
 int vermelho = 12;  
 int botao    = 2;
 
-long tempoI = millis();
+long contagem = millis();
 int  x = 0;
+
+int A = 0;
 
 
 void setup(){
@@ -22,6 +24,8 @@ void setup(){
     digitalWrite(verde, HIGH);
     digitalWrite(amarelo,  LOW);
     digitalWrite(vermelho, LOW);
+
+    A = millis();
 }
 
 
@@ -42,7 +46,7 @@ void loop(){
       digitalWrite(vermelho, LOW);
     
       x = 0;              // RESET
-      tempoI = millis();  // RESET
+      contagem = millis();  // RESET
   }
   
   if(x==0){
@@ -61,13 +65,14 @@ void loop(){
       digitalWrite(vermelho, HIGH);
   }
   
-  bool atualizacao = (x==0 && millis() - tempoI > TEMPO_VERDE)   +
-                     (x==1 && millis() - tempoI > TEMPO_AMARELO) +
-                     (x==2 && millis() - tempoI > TEMPO_VERMELHO);
+  bool atualizacao = (x==0 && millis() - contagem > TEMPO_VERDE)   |
+                     (x==1 && millis() - contagem > TEMPO_AMARELO) |
+                     (x==2 && millis() - contagem > TEMPO_VERMELHO);
                      
   if(atualizacao){
     x++;
-    tempoI = millis();
+    contagem = millis();
+    Serial.println(millis()-A);
   }
 
   if(x == 3)

@@ -5,14 +5,13 @@ from RPi.GPIO import *
 
 
 # VARIÁVEIS GLOBAIS PARA SEREM UTILIZADAS NAS FUNÇÕES DO ALGORÍTIMO
-temposVermelho = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO
-temposResto    = []     # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES NÃO VERMELHO
-sinc = 0                # VARIÁVEL PARA CONTAGEM DE DETECÇÕES 
-atualizacao = time()    # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
-vermelhos = False       # VARIÁVEL DE DETECÇÃO DO SINAL
-estadoAnterior = False  # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
-erroLeitura = 0         # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEITURA)
-MAX = 12                # VARIÁVEL PARA TAMANHO MÁXIMO DO VETOR
+temposVermelho = np.array([])  # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO
+temposResto    = np.array([])  # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES NÃO VERMELHO
+sinc = 0                       # VARIÁVEL PARA CONTAGEM DE DETECÇÕES 
+atualizacao = time()           # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
+vermelhos = False              # VARIÁVEL DE DETECÇÃO DO SINAL
+estadoAnterior = False         # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
+erroLeitura = 0                # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEITURA)
 
 # CONFIGURANDO OS PINOS DIGITAIS DO LED DO RASPBERRY
 LED = 12
@@ -43,6 +42,13 @@ dadosRGB = np.array([
     [[173, 135, 255], [183, 145, 265]],
     [[172, 95, 248],  [182, 105, 258]]
 ])
+
+# TABELA T-STUDENT PAR PRECISÃO E EXATIDÃO DOS DADOS POR INCERTEZA RELATIVA
+tStudent = [
+    12.706, 4.303, 3.182, 2.776, 2.571, 2.447, 2.265, 2.306, 2.262, 2.228, 2.201, 2.179,
+    2.160, 2.145, 2.131, 2.120, 2.110, 2.101, 2.093, 2.086, 2.080, 2.074, 2.069, 2.064,
+    2.060, 2.056, 2.052, 2.048, 2.045, 2.042
+]
 
 
 # CRIANDO UMA IMAGEM QUE APRESENTA APENAS O INTERVALO RGB ESCOLHIDO
@@ -106,13 +112,13 @@ def adicionarSinal(sinal):
         requisicao(urlNode1 + 'ATIVAR', timeout=0.2) # SINAL VERMELHO
 
         print(f'{atualizacao} ADICIONADO AO SINAL NÃO VERMELHO')
-        temposResto.append(atualizacao)
+        temposResto = np.append(temposResto, atualizacao)
     else:
         requisicao(urlNode2 + 'DESATIVAR', timeout=0.2) # SINAL NÃO VERMELHO
         requisicao(urlNode1 + 'DESATIVAR', timeout=0.2) # SINAL NÃO VERMELHO
 
         print(f'{atualizacao} ADICIONADO AO SINAL VERMELHO')
-        temposVermelho.append(atualizacao)
+        temposVermelho = np.append(temposVermelho, atualizacao)
 
     sinc = sinc + 1          # INCREMENTANDO A SINCRONIZAÇÃO
     estadoAnterior = sinal   # ATUALIZANDO O ESTADO ANTERIOR
@@ -137,10 +143,10 @@ def verificarSincronismo(sinal):
     atualizacao = time() - atualizacao
     
     # TOTAL DE VARIAÇÕES DE SINAL NECESSÁRIAS PARA SINCRONIZAÇÃO
-    if sinc >= MAX and sinal:
-        erroTotal      = int(erroLeitura * 1000) + 3200
-        mediaVermelhos = int(treatData(temposVermelho[2:])  * 1000)
-        mediaResto     = int(treatData(temposResto[2:])     * 1000)
+    if validarDados(temposVermelho[1:], temposResto[1:]) and sinal:
+        erroTotal      = int(erroLeitura                    * 1000)
+        mediaVermelhos = int(treatData(temposVermelho[1:])  * 1000)
+        mediaResto     = int(treatData(temposResto[1:])     * 1000)
 
         print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS:         {mediaVermelhos/1000}')
         print(f'MÉDIA DOS TEMPOS DE SINAIS NÃO VERMELHOS:     {mediaResto/1000}')
@@ -202,8 +208,9 @@ def requisicao(url, timeout):
 
 
 # RETORNANDO A MÉDIA DE UMA LISTA SEM OUTLIERS
-def treatData(list):
-    array = np.array(list)
+def treatData(array):
+    if len(array) < 5:
+        return array
     
     std  = np.std(array)
     mean = np.mean(array)
@@ -211,8 +218,30 @@ def treatData(list):
     upper = mean + 1*std
     lower = mean - 1*std
 
-    array = array[(array > lower) & (array < upper)]
-    return np.mean(array)
+    return array[(array > lower) & (array < upper)]
+
+
+# CALCULANDO A INCERTEZA RELATIVA EM UMA LISTA DE DADOS
+def incertezaRelativa(array):
+    global tStudent
+    n = len(array)
+    T = 1
+
+    if n <= 30:
+        T = tStudent[n-2]  
+
+    return T * np.std(array, ddof = 1)/(n**0.5)/np.mean(array)
+
+
+# VALIDANDO A PRECISÃO E EXATIDÃO DOS DADOS REGISTRADOS
+def validarDados(array1, array2):
+    if len(array1) < 5 or len(array2) < 5:
+        return False
+    
+    if incertezaRelativa(array1) < 0.4 and incertezaRelativa(array2) < 0.4:
+        return True
+    
+    return False
 
 
 main()

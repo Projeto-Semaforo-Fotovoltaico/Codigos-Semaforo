@@ -66,12 +66,12 @@ void handleSinc(void){
     if(!sinc)
         return;
 
-    bool condicao = (sinal & millis() - contagem > tempoVermelho) ||
-                    (!sinal & millis() - contagem > tempoResto);
+    bool condicao = (sinal  & millis() - contagem >= tempoVermelho) ||
+                    (!sinal & millis() - contagem >= tempoResto);
     
     if(condicao){
-        contagem = millis();
         sinal = !sinal;
+        contagem = millis();
     }
 }
 
@@ -79,9 +79,9 @@ void handleSinc(void){
 // FUNÇÃO PARA ATIVAR O MODO DE SINCRONIZAÇÃO SEM A CÂMERA
 void sincMode(String req){
     int K0 = req.indexOf("?");        // PROCURA O PRIMEIRO "?"
-    int K1 = req.indexOf("|", K0+1);  // PROCURA A PARTIR DE PRIMEIRO "|"
-    int K2 = req.indexOf("|", K1+1);  // PROCURA A PARTIR DO SEGUNDO  "|"
-    int K3 = req.indexOf("|", K2+1);  // PROCURA A PARTIR DO TERCEIRO "|"
+    int K1 = req.indexOf("A", K0+1);  // PROCURA A PARTIR DE PRIMEIRO "|"
+    int K2 = req.indexOf("A", K1+1);  // PROCURA A PARTIR DO SEGUNDO  "|"
+    int K3 = req.indexOf("A", K2+1);  // PROCURA A PARTIR DO TERCEIRO "|"
     
     tempoVermelho = req.substring(K0+1, K1).toInt();
     tempoResto    = req.substring(K1+1, K2).toInt();
@@ -157,7 +157,7 @@ void loop(){
 
 // MONTANDO A PÁGINA HTML PELO ENDEREÇO DE MEMÓRIA DO SERVIDOR CLIENTE
 void paginaHTML(WiFiClient *cl){
-    (*cl).println("<!DOCTYPE html>");
+  (*cl).println("<!DOCTYPE html>");
   (*cl).println("<html lang='pt-br'>");
   (*cl).println("<head>");
   (*cl).println("<meta charset='UTF-8'>");
