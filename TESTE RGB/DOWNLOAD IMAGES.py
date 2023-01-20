@@ -6,7 +6,8 @@ from time import sleep
 from time import time
 
 urlCamera = 'http://192.168.4.4/cam-hi.jpg'
-
+destino   = 'Teste/'
+x = 0
 
 def conectarRede(networkName):
     os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
@@ -32,13 +33,20 @@ def zoom(img, zoom_factor=1.5):
     return cv2.resize(img_cropped, None, fx=zoom_factor, fy=zoom_factor)
 
 
+def downloadImages(img):
+    global x
+    x += 1
+
+    cv2.imwrite(destino + rf'teste{x}.png', img)
+    print('IMAGEM SALVA')
+
+
 def main():
     global urlCamera
+    print('APERTE "ENTER" PARA BAIXAR A IMAGEM')
     sleep(1)
 
     while True:
-        erro = time()
-
         WEBinfo = requisicao(urlCamera, timeout=5)
         if not WEBinfo:
             print('erro na leitura da camera...')
@@ -47,17 +55,16 @@ def main():
         try:
             img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
             img = cv2.imdecode(img, -1)
-
             img = zoom(img, 2)
-            erro = time() - erro
 
-            print(f'erro: {erro:.5f}')
             cv2.imshow("streaming", img)
-            cv2.waitKey(1)
+            if cv2.waitKey(1) == 13:
+                downloadImages(img)
         except:
             print('erro na leitura da câmera...')
             continue
         
 
 conectarRede('ProjetoSemaforo')
+#sleep(5)
 main()

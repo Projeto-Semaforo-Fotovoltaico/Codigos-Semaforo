@@ -20,8 +20,12 @@ void configurarCamera(){
     cfg.setBufferCount(2);
     cfg.setJpeg(80);
   
-    bool ok = Camera.begin(cfg);
-    Serial.println(ok ? "CAMERA OK" : "CAMERA FAIL");
+    bool camera = Camera.begin(cfg);
+
+    if (camera)
+      Serial.println("CAMERA WORKING");
+    else
+      Serial.println("CAMERA FAIL");
 }
 
 
@@ -32,9 +36,9 @@ void startServer(char *nome, char *senha){
   WiFi.begin(nome, senha);
 
   // (OPCIONAL) CONFIGURAÇÕES SECUNDÁRIAS DO SERVIDOR LOCAL
-  IPAddress staticIP(192, 168, 4, 4);     // IP ESTÁTICO (USADO PARA EXTRAIR AS IMAGENS)
-  IPAddress gateway(192, 168, 4, 2);      // GATEWAY ESTÁTICO IP 
-  IPAddress subnet(255, 255, 255, 0);     // OCULTAR SUB REDE
+  IPAddress staticIP(192, 168, 4, 4);       // IP ESTÁTICO (USADO PARA EXTRAIR AS IMAGENS)
+  IPAddress gateway(192, 168, 4, 12);       // GATEWAY ESTÁTICO IP 
+  IPAddress subnet(255, 255, 255, 0);       // OCULTAR SUB REDE
   WiFi.config(staticIP, gateway, subnet);
   
   while (WiFi.status() != WL_CONNECTED){
@@ -48,7 +52,7 @@ void startServer(char *nome, char *senha){
 
 // IMPRIMINDO INFORMAÇÕES DO SERVIDOR CRIADO PARA ACESSAR A CÂMERA
 void exibirInformacoes(){
-  Serial.print("http://");
+  Serial.print("ENDEREÇO:   http://");
   Serial.print(WiFi.localIP());
   Serial.println("/cam-hi.jpg");
 }
@@ -56,11 +60,12 @@ void exibirInformacoes(){
 
 // CASO DESCONECTE COM A REDE, RESETAR O ESP
 void reconectarRede(void){
-  if ((WiFi.status() != WL_CONNECTED)){
-      delay(10000);
-      Serial.println("RESETANDO ESP");
-      ESP.restart();
-  }
+  if (WiFi.status() == WL_CONNECTED)
+    return;
+
+  delay(10000);
+  Serial.println("RESETANDO ESP");
+  ESP.restart();
 }
 
 
@@ -73,7 +78,7 @@ void setup(){
   startServer("ProjetoSemaforo", "12345678");
   exibirInformacoes();
 
-  server.on("/cam-hi.jpg", handleJpg);
+  server.on("/cam-hi.jpg", sendJPG);
   server.begin();
 }
 
@@ -86,16 +91,10 @@ void loop(){
 
 
 // RECEBIMENTO DE UMA REQUISIÇÃO PARA ENVIAR UM ARQUIVO JPG
-void handleJpg(){
+void sendJPG(){
     if (!esp32cam::Camera.changeResolution(hiRes))
       Serial.println("SET-HI-RES FAIL");
 
-    serveJpg();
-}
-
-
-// ENVIANDO ARQUIVOS DE IMAGEM JPG
-void serveJpg(){
     auto frame = esp32cam::capture();
 
     if (frame == nullptr) {
@@ -111,3 +110,5 @@ void serveJpg(){
     WiFiClient client = server.client();
     frame->writeTo(client);
 }
+
+

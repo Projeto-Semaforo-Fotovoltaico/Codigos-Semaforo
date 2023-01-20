@@ -26,8 +26,8 @@ unsigned long contagem;
 
 // CRIANDO E INICIANDO O ROTEADOR LOCAL
 void startServer(char* nome, char* senha){
-    IPAddress staticIP(192, 168, 4, 2);  // IP ESTÁTICO
-    IPAddress gateway(192, 168, 4, 1);   // GATEWAY ESTÁTICO IP
+    IPAddress staticIP(192, 168, 4, 1);  // IP ESTÁTICO
+    IPAddress gateway(192, 168, 4, 10);   // GATEWAY ESTÁTICO IP
     IPAddress subnet(255, 255, 255, 0);  // OCULTAR SUB REDE
   
     // MODO DE TRABALHO WIFI VIA ACESS POINT

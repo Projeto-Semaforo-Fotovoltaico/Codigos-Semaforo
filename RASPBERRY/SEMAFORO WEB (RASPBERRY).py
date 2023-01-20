@@ -7,7 +7,7 @@ from RPi.GPIO import *
 # VARIÁVEIS GLOBAIS PARA SEREM UTILIZADAS NAS FUNÇÕES DO ALGORÍTIMO
 temposVermelho = np.array([])  # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO
 temposResto    = np.array([])  # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES NÃO VERMELHO
-sinc = 0                       # VARIÁVEL PARA CONTAGEM DE DETECÇÕES 
+sinc = 0                       # VARIÁVEL PARA CONTAGEM DE DETECÇÕES
 atualizacao = time()           # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
 vermelhos = False              # VARIÁVEL DE DETECÇÃO DO SINAL
 estadoAnterior = False         # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
@@ -24,7 +24,6 @@ output(LED, HIGH)
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
 urlCamera   = 'http://192.168.4.4/cam-hi.jpg'
-#urlCamera   = 'http://pyimagesearch.com/wp-content/uploads/2015/01/opencv_logo.png'
 urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
 
@@ -85,21 +84,9 @@ def reconhecerVermelhos(img):
     redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
                                     param1=50, param2=10, minRadius=5, maxRadius=300)
 
-    if type(redCircles).__module__ == np.__name__:
+    if redCircles is not None:
         return True
 
-    return False
-
-
-# RETORNANDO O ESTADO DE DETECÇÃO ENCONTRADO PARA PREENCHER O VETOR
-def processaSinal(vermelhos):
-    mudaLED()
-
-    if vermelhos:
-        print('SEMÁFORO VERMELHO DETECTADO!')
-        return True
-    
-    print('SEMÁFORO VERMELHO NÃO DETECTADO!')
     return False
 
 
@@ -144,9 +131,9 @@ def verificarSincronismo(sinal):
     
     # TOTAL DE VARIAÇÕES DE SINAL NECESSÁRIAS PARA SINCRONIZAÇÃO
     if validarDados(temposVermelho[1:], temposResto[1:]) and sinal:
-        erroTotal      = int(erroLeitura                    * 1000)
-        mediaVermelhos = int(treatData(temposVermelho[1:])  * 1000)
-        mediaResto     = int(treatData(temposResto[1:])     * 1000)
+        erroTotal      = int(erroLeitura * 1000)
+        mediaVermelhos = int(np.mean(treatData(temposVermelho[1:]))  * 1000)
+        mediaResto     = int(np.mean(treatData(temposResto[1:]))     * 1000)
 
         print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS:         {mediaVermelhos/1000}')
         print(f'MÉDIA DOS TEMPOS DE SINAIS NÃO VERMELHOS:     {mediaResto/1000}')
@@ -185,12 +172,12 @@ def main():
             img = cv2.imdecode(img, -1)
 
             img = zoom(img, 2)
-            vermelhos = reconhecerVermelhos(img)
+            sinal = reconhecerVermelhos(img)
         except:
             print('erro na leitura da câmera...')
             continue
 
-        sinal = processaSinal(vermelhos)      
+        mudaLED()    
         erroLeitura = time() - erroLeitura
 
         if verificarSincronismo(sinal):

@@ -30,9 +30,9 @@ void conectarRede(char* nomeRede, char* senhaRede){
     WiFi.begin(nomeRede, senhaRede);
 
     // (OPCIONAL) CONFIGURAÇÕES SECUNDÁRIAS DO SERVIDOR LOCAL
-    IPAddress staticIP(192, 168, 4, 3);     // IP ESTÁTICO (USADO PARA AS REQUISIÇÕES)
-    IPAddress gateway(192, 168, 4, 2);      // GATEWAY ESTÁTICO IP
-    IPAddress subnet(255, 255, 255, 0);     // OCULTAR SUB REDE
+    IPAddress staticIP(192, 168, 4, 3);      // IP ESTÁTICO (USADO PARA AS REQUISIÇÕES)
+    IPAddress gateway(192, 168, 4, 11);     // GATEWAY ESTÁTICO IP
+    IPAddress subnet(255, 255, 255, 0);      // OCULTAR SUB REDE
     WiFi.config(staticIP, gateway, subnet);
 
     while(WiFi.status() != WL_CONNECTED){

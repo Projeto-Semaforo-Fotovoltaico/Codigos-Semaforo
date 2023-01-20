@@ -14,9 +14,14 @@ erroLeitura = 0                # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEI
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
 urlCamera   = 'http://192.168.4.4/cam-hi.jpg'
+#urlCamera  = 'http://pyimagesearch.com/wp-content/uploads/2015/01/opencv_logo.png'
 urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
 
+# VARIÁVEIS GLOBAIS PARA FUNÇÃO DE MÉDIA MÓVEL PARA FILTRO LÓGICO
+vetorLogico = np.zeros(5)
+soma = 0
+k = 0
 
 # DADOS QUE SÃO OS INTERVALOS DE DETECÇÃO RGB
 dadosRGB = np.array([
@@ -83,7 +88,7 @@ def reconhecerVermelhos(img):
 
 # RETORNANDO O ESTADO DE DETECÇÃO ENCONTRADO PARA PREENCHER O VETOR
 def processaSinal(vermelhos):
-    if vermelhos:
+    if smooth(int(vermelhos)) > 0.5:
         print('SEMÁFORO VERMELHO DETECTADO!')
         return True
     
@@ -132,7 +137,7 @@ def verificarSincronismo(sinal):
     
     # TOTAL DE VARIAÇÕES DE SINAL NECESSÁRIAS PARA SINCRONIZAÇÃO
     if validarDados(temposVermelho[1:], temposResto[1:]) and sinal:
-        erroTotal      = int(erroLeitura * 1000)
+        erroTotal      = int(erroLeitura * len(vetorLogico) * 1000)
         mediaVermelhos = int(np.mean(treatData(temposVermelho[1:]))  * 1000)
         mediaResto     = int(np.mean(treatData(temposResto[1:]))     * 1000)
 
@@ -165,12 +170,14 @@ def main():
             img = cv2.imdecode(img, -1)
 
             img = zoom(img, 2)
-            sinal = reconhecerVermelhos(img)
+            vermelhos = reconhecerVermelhos(img)
         except:
             print('erro na leitura da câmera...')
             continue
 
+        sinal = processaSinal(vermelhos)
         erroLeitura = time() - erroLeitura
+
         if verificarSincronismo(sinal):
             break
 
@@ -218,6 +225,22 @@ def validarDados(array1, array2):
         return True
     
     return False
+
+    
+# FILTRANDO UMA FUNÇÃO POR MÉDIA MÓVEL
+def smooth(val):
+    global soma, k, vetorLogico
+
+    soma = soma - vetorLogico[k]
+    vetorLogico[k] = val
+
+    soma = soma + vetorLogico[k]
+    k = k + 1
+
+    if k == len(vetorLogico):
+        k = 0
+    
+    return soma/vetorLogico.size
     
 
 # CONECTANDO A UMA REDE WIFI PELO PC ATRAVÉS DE SEU NOME PÚBLICO
