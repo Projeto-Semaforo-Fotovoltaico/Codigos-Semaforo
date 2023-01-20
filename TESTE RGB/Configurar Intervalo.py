@@ -2,7 +2,6 @@ import cv2, os
 import numpy as np
 from random import randint
 
-
 i = 0
 ponto1 = [0, 0]
 ponto2 = [0, 0]
@@ -14,17 +13,17 @@ def configurarIntervalo(img):
     def onMouse(event, x, y, flags, params):
         global i, ponto1, ponto2
 
-        if event != cv2.EVENT_LBUTTONDOWN: # CLICOU O MOUSE?
+        if event != cv2.EVENT_LBUTTONDOWN: # CLICOU O MOUSE? (EVENTO)
             return
-        
-        elif i == 0:
-                ponto1 = [x, y]
-                i += 1
 
-                print(f'ponto1 = {[x, y]}')
-                cv2.circle(img, (x, y), 5, (0, 255, 255), -1)
-                cv2.imshow('image', img)
-                
+        elif i == 0:
+            ponto1 = [x, y]
+            i += 1
+
+            print(f'ponto1 = {[x, y]}')
+            cv2.circle(img, (x, y), 5, (0, 255, 255), -1)
+            cv2.imshow('image', img)
+
         elif i == 1:
             ponto2 = [x, y]
             i += 1
@@ -42,11 +41,9 @@ def configurarIntervalo(img):
         cv2.destroyAllWindows()
 
 
-# CONVERTENDO AS DUAS IMAGENS PARA MESMA DIMENSÃO E TAMANHO e MOSTRANDO LADO A LADO
+# CONVERTENDO AS DUAS IMAGENS PARA MESMA DIMENSÃO E MOSTRANDO LADO A LADO
 def showImages(img1, img2):
-    img2 = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR) 
-    img1 = cv2.resize(img1, (640, 480))
-    img2 = cv2.resize(img2, (640, 480))
+    img2 = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
 
     result = cv2.hconcat([img1, img2])
     cv2.imshow("IMAGEM", result)
