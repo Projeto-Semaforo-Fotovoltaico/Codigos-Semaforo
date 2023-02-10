@@ -23,7 +23,7 @@ setup(LED, OUT)
 output(LED, HIGH)
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
-urlCamera   = 'http://192.168.4.4'
+urlCamera   = 'http://192.168.4'
 urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
 
@@ -54,16 +54,20 @@ dadosRGB = np.array([
 def initCamera():
     global urlCamera
 
-    if not requisicao(urlCamera + ":81/stream", timeout=10):
-        sleep(0.5)
-        return None
+    for P in range(2, 255):
+        URL = urlCamera + '.' + str(P)
 
-    requisicao(urlCamera + "/control?var=quality&val=10", timeout=5)
-    requisicao(urlCamera + "/control?var=framesize&val=9", timeout=5)
+        if requisicao(URL + ":81/stream", timeout=1.5):
+            break
+
+        print('SEM SERVIDOR')
+
+    requisicao(URL + "/control?var=quality&val=10", timeout=5)
+    requisicao(URL + "/control?var=framesize&val=9", timeout=5)
 
     sleep(1)
-    return cv2.VideoCapture(urlCamera + ":81/stream")
-
+    return cv2.VideoCapture(URL + ":81/stream")
+    
 
 # OBTENDO E ARMAZENANDO O ATUAL QUADRO DA FILMAGEM 
 def getImage(cap):

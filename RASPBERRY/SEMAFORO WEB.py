@@ -13,7 +13,7 @@ estadoAnterior = False         # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
 erroLeitura = 0                # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEITURA)
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
-urlCamera   = 'http://192.168.4.4'
+urlCamera   = 'http://192.168.4'
 urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
 
@@ -44,16 +44,20 @@ dadosRGB = np.array([
 # INICIANDO E CONECTANDO COM O SERVIDOR DA CÂMERA 
 def initCamera():
     global urlCamera
-    
-    if not requisicao(urlCamera + ":81/stream", timeout=10):
-        sleep(0.5)
-        return None
 
-    requisicao(urlCamera + "/control?var=quality&val=10", timeout=5)
-    requisicao(urlCamera + "/control?var=framesize&val=9", timeout=5)
+    for P in range(2, 255):
+        URL = urlCamera + '.' + str(P)
+
+        if requisicao(URL + ":81/stream", timeout=1.5):
+            break
+
+        print('SEM SERVIDOR')
+
+    requisicao(URL + "/control?var=quality&val=10", timeout=5)
+    requisicao(URL + "/control?var=framesize&val=9", timeout=5)
 
     sleep(1)
-    return cv2.VideoCapture(urlCamera + ":81/stream")
+    return cv2.VideoCapture(URL + ":81/stream")
 
 
 # OBTENDO E ARMAZENANDO O ATUAL QUADRO DA FILMAGEM 
