@@ -2,7 +2,8 @@ import cv2, os
 import numpy as np
 from time import time
 
-pasta = 'Teste'
+pasta       = 'Teste'
+param2teste = 15
 
 # DADOS QUE SÃO OS INTERVALOS DE DETECÇÃO RGB
 dadosRGB = np.array([
@@ -41,11 +42,13 @@ def desenharCirculos(img, detected):
 
 # RECONHECENDO O CÍRCULO MAIS VERMELHOS PRESENTE EM UMA IMAGEM
 def reconhecerVermelhos(img):
+    global param2teste
+
     HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     maskr = juntarIntervalos(HSV)
 
     redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=10000,
-                                     param1=50, param2=15, minRadius=2, maxRadius=300)
+                                     param1=50, param2=param2teste, minRadius=2, maxRadius=300)
 
     if redCircles is not None:
         return redCircles[0][0], maskr
@@ -89,10 +92,21 @@ def arquivosDiretorio(endereco=''):
 
 
 def main():
+    global param2teste
+
     arquivos = arquivosDiretorio(pasta)
     for i, arquivo in enumerate(arquivos):
-        print('ARQUIVO: ', arquivo)
-        foto(pasta, arquivo)
+        
+        while True:
+            print()
 
+            print('ARQUIVO: ', arquivo)
+            print('DIGITE -1 PARA PARA A PRÓXIMA IMAGEM')
+            param2teste = int(input('DIGITE O PARAM2: '))
+            
+            if param2teste == -1:
+                break
+            
+            foto(pasta, arquivo)
 
 main()

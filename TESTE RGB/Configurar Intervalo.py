@@ -63,20 +63,20 @@ def desenharCirculos(img, detected):
 # RECONHECENDO O CÍRCULO MAIS VERMELHO PRESENTE EM UMA IMAGEM
 def reconhecerVermelhos(img):
     HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    x1, y1, z1 = randint(0, 255), randint(0, 255), randint(0, 255)
+    x1, y1, z1 = randint(0, 245), randint(0, 245), randint(0, 245)
 
     low  = np.array([x1, y1, z1])
     high = np.array([x1+10, y1+10, z1+10])
 
     maskr = cv2.inRange(HSV, low, high)
-    redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
+    redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=10,
                                      param1=50, param2=10, minRadius=1, maxRadius=500)
     
     if redCircles is not None:
         redCircle = redCircles[0][0]
 
         if validarPosicao(redCircle):
-            print('DETECTADO: ', f'[{low[0]}, {low[1]}, {low[2]}],', f'[{high[0]}, {high[1]}, {high[2]}]\n')
+            print('DETECTADO: ', f'][{low[0]}, {low[1]}, {low[2]}],', f'[{high[0]}, {high[1]}, {high[2]}]]\n')
             return redCircle, maskr
 
     return None, maskr
@@ -105,7 +105,9 @@ def validarPosicao(redCircle):
 
 
 # EXIBE TODAS AS FOTOS ENCONTRADAS EM UM ENDEREÇO
-def fotos(endereco):
+def fotos(pasta, arquivo):
+    endereco = pasta + rf'\{arquivo}'
+
     configurarIntervalo(cv2.imread(endereco))
     print('CARREGANDO...   ', end='')
 
@@ -139,10 +141,13 @@ def main():
 
     for c, arquivo in enumerate(arquivos):
         print(f'[{c+1}] {arquivo}')
+    
     choice = int(input('sua opcao: ')) - 1
+    arquivo = arquivos[choice]
 
     print()
-    fotos(pasta + rf'\{arquivos[choice]}')
+    print('ARQUIVO: ', arquivo)
+    fotos(pasta, arquivo)
 
 
 main()

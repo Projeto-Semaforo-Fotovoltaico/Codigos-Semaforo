@@ -1,7 +1,7 @@
 import requests, os, cv2
 import numpy as np
 from time import sleep, time
-
+import urllib.request
 
 # VARIÁVEIS GLOBAIS PARA SEREM UTILIZADAS NAS FUNÇÕES DO ALGORÍTIMO
 temposVermelho = np.array([])  # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO
@@ -13,25 +13,10 @@ estadoAnterior = False         # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
 erroLeitura = 0                # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEITURA)
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
-urlCamera   = 'http://192.168.4.4/cam-hi.jpg'
+urlCamera   = 'http://192.168.4.4'
 urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
 
-
-# DADOS QUE SÃO OS INTERVALOS DE DETECÇÃO RGB
-dadosRGB = np.array([
-    [[169, 158, 248], [179, 168, 258]],
-    [[170, 143, 254], [180, 153, 264]],
-    [[165, 116, 250], [175, 126, 260]],
-    [[174, 139, 249], [184, 149, 259]],
-    [[173, 131, 253], [183, 141, 263]],
-    [[167, 105, 254], [177, 115, 264]],
-    [[170, 147, 255], [180, 157, 265]],
-    [[167, 97, 245],  [177, 107, 255]],
-    [[172, 187, 253], [182, 197, 263]],
-    [[173, 135, 255], [183, 145, 265]],
-    [[172, 95, 248],  [182, 105, 258]]
-])
 
 # TABELA T-STUDENT PAR PRECISÃO E EXATIDÃO DOS DADOS POR INCERTEZA RELATIVA
 tStudent = [
@@ -41,16 +26,59 @@ tStudent = [
 ]
 
 
+# DADOS QUE SÃO OS INTERVALOS DE DETECÇÃO RGB
+dadosRGB = np.array([
+    [171, 184, 180], [181, 194, 190],
+    [171, 158, 245], [181, 168, 255],
+    [172, 157, 137], [182, 167, 147],
+    [172, 186, 187], [182, 196, 197],
+    [170, 158, 245], [180, 168, 255],
+    [173, 201, 235], [183, 211, 245],
+    [175, 172, 245], [185, 182, 255],
+    [171, 199, 245], [181, 209, 255],
+    [174, 107, 245], [184, 117, 255],
+    [166, 65, 245], [176, 75, 255]
+], dtype=np.uint8)
+
+
+# INICIANDO E CONECTANDO COM O SERVIDOR DA CÂMERA 
+def initCamera():
+    global urlCamera
+    
+    if not requisicao(urlCamera + ":81/stream", timeout=10):
+        sleep(0.5)
+        return None
+
+    requisicao(urlCamera + "/control?var=quality&val=10", timeout=5)
+    requisicao(urlCamera + "/control?var=framesize&val=9", timeout=5)
+
+    sleep(1)
+    return cv2.VideoCapture(urlCamera + ":81/stream")
+
+
+# OBTENDO E ARMAZENANDO O ATUAL QUADRO DA FILMAGEM 
+def getImage(cap):
+    if cap is None or not cap.isOpened():
+        return None
+    
+    try:
+        ret, img = cap.read()
+        img = zoom(img, 2)
+        return img
+    except:
+        return None
+
+
 # CRIANDO UMA IMAGEM QUE APRESENTA APENAS O INTERVALO RGB ESCOLHIDO
 def juntarIntervalos(HSV):
     global dadosRGB
     
-    mask = 0
-    for c in range(len(dadosRGB)):
-        low, high  = dadosRGB[c]
-        mask = cv2.add(mask, cv2.inRange(HSV, low, high))
+    maskr = 0
+    for c in range(0, len(dadosRGB), 2):
+        low, high  = dadosRGB[c], dadosRGB[c + 1]
+        maskr = cv2.bitwise_or(maskr, cv2.inRange(HSV, low, high))
     
-    return mask
+    return maskr
 
 
 # DANDO UM ZOOM NA IMAGEM PARA MELHOR DETECÇÃO
@@ -152,23 +180,21 @@ def verificarSincronismo(sinal):
 # FUNÇÃO PRINCIPAL DO PROGRAMA NO MODO LOOP ATÉ O SINCRONISMO
 def main():
     global vermelhos, urlCamera, erroLeitura
-    
     sleep(5)
+
     requisicao(urlNode1 + "RASPBERRY", timeout=5)
-    
+    cap = initCamera()
+
     while True:
         erroLeitura = time()
+        img = getImage(cap)
         
-        try:
-            WEBinfo = requisicao(urlCamera, timeout=0.5)
-            img = np.array(bytearray(WEBinfo.content), dtype=np.uint8)
-            img = cv2.imdecode(img, -1)
+        if img is None:
+            print('SEM IMAGEM')
+            sleep(0.5)
+            return main()
 
-            img = zoom(img, 2)
-            sinal = reconhecerVermelhos(img)
-        except:
-            print('erro na leitura da câmera...')
-            continue
+        sinal = reconhecerVermelhos(img)
 
         erroLeitura = time() - erroLeitura
         if verificarSincronismo(sinal):
@@ -178,10 +204,9 @@ def main():
 # ENVIAR UMA REQUISIÇÃO PARA UM LINK COM UM TEMPO MÁXIMO DE RESPOSTA
 def requisicao(url, timeout):
     try:
-        return requests.get(url, timeout=timeout)
+        return urllib.request.urlopen(url, timeout=timeout)
     except Exception:
         return False
-
 
 # RETORNANDO A MÉDIA DE UMA LISTA SEM OUTLIERS
 def treatData(array):

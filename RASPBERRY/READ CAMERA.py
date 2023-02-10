@@ -5,7 +5,7 @@ import os
 from time import sleep
 from time import time
 
-urlCamera = 'http://192.168.4.4/cam-hi.jpg'
+urlCamera = 'http://192.168.4.4'
 
 
 def conectarRede(networkName):
@@ -32,32 +32,51 @@ def zoom(img, zoom_factor=1.5):
     return cv2.resize(img_cropped, None, fx=zoom_factor, fy=zoom_factor)
 
 
+# INICIANDO E CONECTANDO COM O SERVIDOR DA CÂMERA 
+def initCamera():
+    global urlCamera
+
+    if not requisicao(urlCamera + ":81/stream", timeout=10):
+        sleep(0.5)
+        return None
+
+    requisicao(urlCamera + "/control?var=quality&val=10", timeout=5)
+    requisicao(urlCamera + "/control?var=framesize&val=9", timeout=5)
+
+    sleep(1)
+    return cv2.VideoCapture(urlCamera + ":81/stream")
+
+
+# OBTENDO E ARMAZENANDO O ATUAL QUADRO DA FILMAGEM 
+def getImage(cap):
+    if cap is None or not cap.isOpened():
+        return None
+    
+    try:
+        ret, img = cap.read()
+        img = zoom(img, 2)
+        return img
+    except:
+        return None
+
+
 def main():
     global urlCamera
     sleep(1)
 
+    cap = initCamera()
+
     while True:
-        erro = time()
+        img = getImage(cap)
 
-        WEBinfo = requisicao(urlCamera, timeout=5)
-        if not WEBinfo:
-            print('erro na leitura da camera...')
-            continue
+        if img is None:
+            print('CÂMERA NÃO FUNCIONANDO')
+            sleep(0.5)
+            return main()
 
-        try:
-            img = np.array(bytearray(WEBinfo.read()), dtype=np.uint8)
-            img = cv2.imdecode(img, -1)
+        cv2.imshow("streaming", img)
+        cv2.waitKey(1)            
 
-            img = zoom(img, 2)
-            erro = time() - erro
-
-            print(f'erro: {erro:.5f}')
-            cv2.imshow("streaming", img)
-            cv2.waitKey(1)
-        except:
-            print('erro na leitura da câmera...')
-            continue
-        
 
 conectarRede('ProjetoSemaforo')
 main()
