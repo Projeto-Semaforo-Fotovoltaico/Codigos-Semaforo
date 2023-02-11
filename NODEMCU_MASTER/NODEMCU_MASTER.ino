@@ -12,8 +12,8 @@ WiFiServer server(80);
 
 // PINO DIGITAL CONECTADO AO RELÉ DAS LÂMPADAS E AO RASPBERRY
 #define LED D0
+#define BUZZER D5
 #define RASPBERRY D2
-
 
 // DECLARAÇÃO DA FUNÇÃO PARA CRIAÇÃO DE PÁGINA HTML
 void paginaHTML(WiFiClient *cl);
@@ -26,9 +26,9 @@ unsigned long contagem;
 
 // CRIANDO E INICIANDO O ROTEADOR LOCAL
 void startServer(char* nome, char* senha){
-    IPAddress staticIP(192, 168, 4, 1);  // IP ESTÁTICO
+    IPAddress staticIP(192, 168, 4, 1);   // IP ESTÁTICO
     IPAddress gateway(192, 168, 4, 10);   // GATEWAY ESTÁTICO IP
-    IPAddress subnet(255, 255, 255, 0);  // OCULTAR SUB REDE
+    IPAddress subnet(255, 255, 255, 0);   // OCULTAR SUB REDE
   
     // MODO DE TRABALHO WIFI VIA ACESS POINT
     WiFi.mode(WIFI_AP);                 
@@ -56,6 +56,9 @@ void processaRequisicao(String requisicao){
     if(requisicao.indexOf("DESATIVAR") != -1)
         sinal = false;
 
+    if(requisicao.indexOf("SINAL") != -1)
+        apitar();
+
     if(requisicao.indexOf("SINC?") != -1)
         sincMode(requisicao);
 }
@@ -72,6 +75,7 @@ void handleSinc(void){
     if(condicao){
         sinal = !sinal;
         contagem = millis();
+        apitar();
     }
 }
 
@@ -107,6 +111,14 @@ void sincMode(String req){
 }
 
 
+// FUNÇÃO PARA ATIVAR O BUZZER EM UM CERTO INTERVALO PADRONIZADO
+void apitar(){
+  digitalWrite(BUZZER, HIGH);
+  delay(200);
+  digitalWrite(BUZZER, LOW);
+}
+
+
 // ESTABELECENDO A COMUNICAÇÃO WIFI E MONITOR SERIAL
 void setup() {
     Serial.begin(9600); 
@@ -126,6 +138,8 @@ void setup() {
 
     delay(5000);
     digitalWrite(RASPBERRY, !HIGH);
+
+    apitar();
 }
 
 

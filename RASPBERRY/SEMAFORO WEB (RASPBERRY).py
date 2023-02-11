@@ -1,17 +1,14 @@
-import requests, os, cv2
+import os, cv2, urllib.request
 import numpy as np
 from time import sleep, time
-from RPi.GPIO import *
-import urllib.request
 
 # VARIÁVEIS GLOBAIS PARA SEREM UTILIZADAS NAS FUNÇÕES DO ALGORÍTIMO
 temposVermelho = np.array([])  # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO
 temposResto    = np.array([])  # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES NÃO VERMELHO
-sinc = 0                       # VARIÁVEL PARA CONTAGEM DE DETECÇÕES
 atualizacao = time()           # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
-vermelhos = False              # VARIÁVEL DE DETECÇÃO DO SINAL
 estadoAnterior = False         # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
 erroLeitura = 0                # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEITURA)
+sinc = 0                       # VARIÁVEL PARA CONTAGEM DE DETECÇÕES 
 
 # CONFIGURANDO OS PINOS DIGITAIS DO LED DO RASPBERRY
 LED = 12
@@ -46,11 +43,11 @@ dadosRGB = np.array([
     [175, 172, 245], [185, 182, 255],
     [171, 199, 245], [181, 209, 255],
     [174, 107, 245], [184, 117, 255],
-    [166, 65, 245], [176, 75, 255]
+    [166, 65, 245] , [176, 75, 255]
 ], dtype=np.uint8)
 
 
-# INICIANDO E CONECTANDO COM O SERVIDOR DA CÂMERA 
+# INICIANDO E CONECTANDO COM O SERVIDOR DA CÂMERA
 def initCamera():
     global urlCamera
 
@@ -65,9 +62,8 @@ def initCamera():
     requisicao(URL + "/control?var=quality&val=10", timeout=5)
     requisicao(URL + "/control?var=framesize&val=9", timeout=5)
 
-    sleep(1)
     return cv2.VideoCapture(URL + ":81/stream")
-    
+
 
 # OBTENDO E ARMAZENANDO O ATUAL QUADRO DA FILMAGEM 
 def getImage(cap):
@@ -127,14 +123,14 @@ def adicionarSinal(sinal):
     global temposVermelho, temposResto, sinc, atualizacao, estadoAnterior
 
     if sinal:
-        requisicao(urlNode2 + 'ATIVAR', timeout=0.2) # SINAL VERMELHO
-        requisicao(urlNode1 + 'ATIVAR', timeout=0.2) # SINAL VERMELHO
+        requisicao(urlNode2 + 'SINAL', timeout=0.2) # SINAL VERMELHO
+        requisicao(urlNode1 + 'SINAL', timeout=0.2) # SINAL VERMELHO
 
         print(f'{atualizacao} ADICIONADO AO SINAL NÃO VERMELHO')
         temposResto = np.append(temposResto, atualizacao)
     else:
-        requisicao(urlNode2 + 'DESATIVAR', timeout=0.2) # SINAL NÃO VERMELHO
-        requisicao(urlNode1 + 'DESATIVAR', timeout=0.2) # SINAL NÃO VERMELHO
+        requisicao(urlNode2 + 'SINAL', timeout=0.2) # SINAL NÃO VERMELHO
+        requisicao(urlNode1 + 'SINAL', timeout=0.2) # SINAL NÃO VERMELHO
 
         print(f'{atualizacao} ADICIONADO AO SINAL VERMELHO')
         temposVermelho = np.append(temposVermelho, atualizacao)
@@ -163,7 +159,7 @@ def verificarSincronismo(sinal):
     
     # TOTAL DE VARIAÇÕES DE SINAL NECESSÁRIAS PARA SINCRONIZAÇÃO
     if validarDados(temposVermelho[1:], temposResto[1:]) and sinal:
-        erroTotal      = int(erroLeitura * 1000)
+        erroTotal      = int(erroLeitura * 1000) + 8000
         mediaVermelhos = int(np.mean(treatData(temposVermelho[1:]))  * 1000)
         mediaResto     = int(np.mean(treatData(temposResto[1:]))     * 1000)
 
@@ -174,7 +170,7 @@ def verificarSincronismo(sinal):
         requisicao(urlNode1 + f'SINC?{mediaVermelhos}|{mediaResto}|{erroTotal + 200}|', timeout=0.2)
         requisicao(urlNode2 + f'SINC?{mediaVermelhos}|{mediaResto}|{erroTotal + 400}|', timeout=0.2)
         return True
-    
+
     # A CADA VARIAÇÃO DE SINAL, INCREMENTE A VARIÁVEL E RESETE A CONTAGEM
     adicionarSinal(sinal)
     return False
@@ -191,7 +187,6 @@ def mudaLED():
 # FUNÇÃO PRINCIPAL DO PROGRAMA NO MODO LOOP ATÉ O SINCRONISMO
 def main():
     global vermelhos, urlCamera, erroLeitura    
-    sleep(5)
 
     requisicao(urlNode1 + "RASPBERRY", timeout=5)
     cap = initCamera()

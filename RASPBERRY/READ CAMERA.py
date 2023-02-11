@@ -7,6 +7,7 @@ from time import time
 
 urlCamera = 'http://192.168.4'
 
+
 def conectarRede(networkName):
     os.system(f'''cmd /c "netsh wlan connect name={networkName}"''')
 

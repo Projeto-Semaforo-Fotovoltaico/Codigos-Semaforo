@@ -12,8 +12,8 @@ WiFiServer server(80);
 
 // PINO DIGITAL CONECTADO AO RELÉ DAS LÂMPADAS E AO RASPBERRY
 #define LED D0
-#define RASPBERRY D1
-
+#define BUZZER D5
+#define RASPBERRY D2
 
 // DECLARAÇÃO DA FUNÇÃO PARA CRIAÇÃO DE PÁGINA HTML
 void paginaHTML(WiFiClient *cl);
@@ -30,9 +30,9 @@ void conectarRede(char* nomeRede, char* senhaRede){
     WiFi.begin(nomeRede, senhaRede);
 
     // (OPCIONAL) CONFIGURAÇÕES SECUNDÁRIAS DO SERVIDOR LOCAL
-    IPAddress staticIP(192, 168, 4, 3);      // IP ESTÁTICO (USADO PARA AS REQUISIÇÕES)
+    IPAddress staticIP(192, 168, 4, 3);     // IP ESTÁTICO (REQUISIÇÕES)
     IPAddress gateway(192, 168, 4, 11);     // GATEWAY ESTÁTICO IP
-    IPAddress subnet(255, 255, 255, 0);      // OCULTAR SUB REDE
+    IPAddress subnet(255, 255, 255, 0);     // OCULTAR SUB REDE
     WiFi.config(staticIP, gateway, subnet);
 
     while(WiFi.status() != WL_CONNECTED){
@@ -65,13 +65,16 @@ void processaRequisicao(String requisicao){
     Serial.println(requisicao);
 
     if(requisicao.indexOf("RASPBERRY") != -1)
-      estadoRaspberry = true;
+        estadoRaspberry = true;
 
     if(requisicao.indexOf("ATIVAR") != -1)
         sinal = true;
   
     if(requisicao.indexOf("DESATIVAR") != -1)
         sinal = false;
+
+    if(requisicao.indexOf("SINAL") != -1)
+        apitar();
 
     if(requisicao.indexOf("SINC?") != -1)
         sincMode(requisicao);
@@ -83,12 +86,13 @@ void handleSinc(void){
     if(!sinc)
         return;
 
-    bool condicao = (sinal & millis() - contagem >= tempoVermelho) ||
+    bool condicao = (sinal  & millis() - contagem >= tempoVermelho) ||
                     (!sinal & millis() - contagem >= tempoResto);
     
     if(condicao){
-        contagem = millis();
         sinal = !sinal;
+        contagem = millis();
+        apitar();
     }
 }
 
@@ -96,9 +100,9 @@ void handleSinc(void){
 // FUNÇÃO PARA ATIVAR O MODO DE SINCRONIZAÇÃO SEM A CÂMERA
 void sincMode(String req){
     int K0 = req.indexOf("?");        // PROCURA O PRIMEIRO "?"
-    int K1 = req.indexOf("|", K0+1);  // PROCURA A PARTIR DE PRIMEIRO "|"
-    int K2 = req.indexOf("|", K1+1);  // PROCURA A PARTIR DO SEGUNDO  "|"
-    int K3 = req.indexOf("|", K2+1);  // PROCURA A PARTIR DO TERCEIRO "|"
+    int K1 = req.indexOf("A", K0+1);  // PROCURA A PARTIR DE PRIMEIRO "|"
+    int K2 = req.indexOf("A", K1+1);  // PROCURA A PARTIR DO SEGUNDO  "|"
+    int K3 = req.indexOf("A", K2+1);  // PROCURA A PARTIR DO TERCEIRO "|"
     
     tempoVermelho = req.substring(K0+1, K1).toInt();
     tempoResto    = req.substring(K1+1, K2).toInt();
@@ -110,7 +114,7 @@ void sincMode(String req){
     Serial.println();
 
     // DESLIGANDO O RASPBERRY E ATUALIZANDO O SINAL PARA VERMELHO
-    digitalWrite(RASPBERRY, LOW);
+    digitalWrite(RASPBERRY, !LOW);
     estadoRaspberry = false;
     sinal = true;
     
@@ -124,25 +128,35 @@ void sincMode(String req){
 }
 
 
+// FUNÇÃO PARA ATIVAR O BUZZER EM UM CERTO INTERVALO PADRONIZADO
+void apitar(){
+  digitalWrite(BUZZER, HIGH);
+  delay(200);
+  digitalWrite(BUZZER, LOW);
+}
+
+
 // ESTABELECENDO A COMUNICAÇÃO WIFI E MONITOR SERIAL
 void setup() {
     Serial.begin(9600); 
+    startServer("ProjetoSemaforo", "12345678");
 
+    nivelBateria = 80;
+    estadoRaspberry = false;
+    sinal = false;
+    sinc  = false;
+    
     pinMode(LED, OUTPUT);
     pinMode(RASPBERRY, OUTPUT);
     pinMode(LED_BUILTIN, OUTPUT);
     
     digitalWrite(LED, LOW);
     digitalWrite(LED_BUILTIN, LOW);
-    
-    // CONECTANDO À REDE DO OUTRO NODEMCU MASTER
-    conectarRede("ProjetoSemaforo", "12345678");
-    exibirInformacoes();
 
-    nivelBateria = 80;
-    estadoRaspberry = false;
-    sinal = false;
-    sinc  = false;
+    delay(5000);
+    digitalWrite(RASPBERRY, !HIGH);
+
+    apitar();
 }
 
 
