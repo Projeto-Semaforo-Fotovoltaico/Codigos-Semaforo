@@ -32,7 +32,7 @@ def zoom(img, zoom_factor=1.5):
     return cv2.resize(img_cropped, None, fx=zoom_factor, fy=zoom_factor)
 
 
-# INICIANDO E CONECTANDO COM O SERVIDOR DA CÂMERA 
+# INICIANDO E CONECTANDO COM O SERVIDOR DA CÂMERA
 def initCamera():
     global urlCamera
 
@@ -47,7 +47,6 @@ def initCamera():
     requisicao(URL + "/control?var=quality&val=10", timeout=5)
     requisicao(URL + "/control?var=framesize&val=9", timeout=5)
 
-    sleep(1)
     return cv2.VideoCapture(URL + ":81/stream")
 
 

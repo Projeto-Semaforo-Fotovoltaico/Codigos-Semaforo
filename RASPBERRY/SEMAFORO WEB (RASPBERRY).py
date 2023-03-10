@@ -51,7 +51,7 @@ dadosRGB = np.array([
 def initCamera():
     global urlCamera
 
-    for P in range(2, 255):
+    for P in range(2, 15):
         URL = urlCamera + '.' + str(P)
 
         if requisicao(URL + ":81/stream", timeout=1.5):
@@ -167,8 +167,8 @@ def verificarSincronismo(sinal):
         print(f'MÉDIA DOS TEMPOS DE SINAIS NÃO VERMELHOS:     {mediaResto/1000}')
         print(f'O TEMPO DE LEITURA DOS ÚLTIMOS SINAIS RAM DE: {erroTotal/1000}')
         
-        requisicao(urlNode1 + f'SINC?{mediaVermelhos}|{mediaResto}|{erroTotal + 200}|', timeout=0.2)
-        requisicao(urlNode2 + f'SINC?{mediaVermelhos}|{mediaResto}|{erroTotal + 400}|', timeout=0.2)
+        requisicao(urlNode1 + f'SINC?{mediaVermelhos}A{mediaResto}A{erroTotal + 200}A', timeout=0.2)
+        requisicao(urlNode2 + f'SINC?{mediaVermelhos}A{mediaResto}A{erroTotal + 400}A', timeout=0.2)
         return True
 
     # A CADA VARIAÇÃO DE SINAL, INCREMENTE A VARIÁVEL E RESETE A CONTAGEM
