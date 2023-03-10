@@ -78,6 +78,5 @@ def main():
         cv2.imshow("streaming", img)
         cv2.waitKey(1)            
 
-
 conectarRede('ProjetoSemaforo')
 main()

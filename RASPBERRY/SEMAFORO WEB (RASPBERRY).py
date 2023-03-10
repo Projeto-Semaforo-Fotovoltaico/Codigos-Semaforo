@@ -1,6 +1,7 @@
 import os, cv2, urllib.request
 import numpy as np
 from time import sleep, time
+from GPIO.RPi import *
 
 # VARIÁVEIS GLOBAIS PARA SEREM UTILIZADAS NAS FUNÇÕES DO ALGORÍTIMO
 temposVermelho = np.array([])  # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO
@@ -61,6 +62,7 @@ def initCamera():
 
     requisicao(URL + "/control?var=quality&val=10", timeout=5)
     requisicao(URL + "/control?var=framesize&val=9", timeout=5)
+    requisicao(URL + "/xclk?xclk=2", timeout=5)
 
     return cv2.VideoCapture(URL + ":81/stream")
 
