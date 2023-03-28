@@ -1,3 +1,16 @@
+// Copyright 2015-2016 Espressif Systems (Shanghai) PTE LTD
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 #include "esp_http_server.h"
 #include "esp_timer.h"
 #include "esp_camera.h"
@@ -561,6 +574,7 @@ static esp_err_t stream_handler(httpd_req_t *req)
     #endif
         face_id = 0;
 #endif
+
         fb = esp_camera_fb_get();
         if (!fb)
         {
@@ -754,7 +768,7 @@ static esp_err_t stream_handler(httpd_req_t *req)
         int64_t frame_time = fr_end - last_frame;
         frame_time /= 1000;
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
-        uint32_t avg_frame_time = ra_filter_run(&ra_filter, frame_timeXCLK MHz);
+        uint32_t avg_frame_time = ra_filter_run(&ra_filter, frame_time);
 #endif
         log_i("MJPG: %uB %ums (%.1ffps), AVG: %ums (%.1ffps)"
 #if CONFIG_ESP_FACE_DETECT_ENABLED
