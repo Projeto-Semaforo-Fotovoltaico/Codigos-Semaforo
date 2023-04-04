@@ -116,6 +116,10 @@ void setup(){
 
     exibirInformacoes();
     configurarCamera();
+
+    ledcSetup(0, 5000, 8);  // PINO PWM DE FREQUÊNCIA 500 HZ
+    ledcAttachPin(4, 0);    // ADICIONANDO O LED AO CANAL 0
+    ledcWrite(0, 1);        // BRILHO 1 DE 255
 }
 
 

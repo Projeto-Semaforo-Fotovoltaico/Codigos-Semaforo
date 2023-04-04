@@ -11,7 +11,7 @@ erroLeitura = 0                # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEI
 sinc = 0                       # VARIÁVEL PARA CONTAGEM DE DETECÇÕES 
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
-urlCamera   = 'http://192.168.4'
+urlCamera   = 'http://192.168.4.6/CAPTURE'
 urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
 
@@ -39,35 +39,15 @@ dadosRGB = np.array([
 ], dtype=np.uint8)
 
 
-# INICIANDO E CONECTANDO COM O SERVIDOR DA CÂMERA
-def initCamera():
-    global urlCamera
-
-    for P in range(2, 15):
-        URL = urlCamera + '.' + str(P)
-
-        if requisicao(URL + ":81/stream", timeout=1.5):
-            break
-
-        print('SEM SERVIDOR')
-
-    requisicao(URL + "/control?var=quality&val=10", timeout=5)
-    requisicao(URL + "/control?var=framesize&val=9", timeout=5)
-
-    return cv2.VideoCapture(URL + ":81/stream")
-
-
 # OBTENDO E ARMAZENANDO O ATUAL QUADRO DA FILMAGEM 
-def getImage(cap):
-    if cap is None or not cap.isOpened():
-        return None
-    
+def getImage(url):
     try:
-        ret, img = cap.read()
-        img = zoom(img, 2)
-        return img
+        img = urllib.request.urlopen(url, timeout=2)
+        img = np.array(bytearray(img.read()), dtype=np.uint8)
     except:
         return None
+    
+    return cv2.imdecode(img, -1)
 
 
 # CRIANDO UMA IMAGEM QUE APRESENTA APENAS O INTERVALO RGB ESCOLHIDO
@@ -181,13 +161,11 @@ def verificarSincronismo(sinal):
 # FUNÇÃO PRINCIPAL DO PROGRAMA NO MODO LOOP ATÉ O SINCRONISMO
 def main():
     global urlCamera, erroLeitura
-
     requisicao(urlNode1 + "RASPBERRY", timeout=5)
-    cap = initCamera()
 
     while True:
         erroLeitura = time()
-        img = getImage(cap)
+        img = getImage(urlCamera)
         
         if img is None:
             print('SEM IMAGEM')
