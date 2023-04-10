@@ -1,7 +1,7 @@
 import os, cv2, urllib.request
 import numpy as np
 from time import sleep, time
-from GPIO.RPi import *
+from RPi.GPIO import *
 
 # VARIÁVEIS GLOBAIS PARA SEREM UTILIZADAS NAS FUNÇÕES DO ALGORÍTIMO
 temposVermelho = np.array([])  # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO

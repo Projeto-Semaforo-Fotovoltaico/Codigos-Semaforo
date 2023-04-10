@@ -35,7 +35,7 @@ def zoom(img, zoom_factor=1.5):
 # OBTENDO E ARMAZENANDO O ATUAL QUADRO DA FILMAGEM 
 def getImage(url):
     try:
-        img = urllib.request.urlopen(url, timeout=2)
+        img = urllib.request.urlopen(url, timeout=6)
         img = np.array(bytearray(img.read()), dtype=np.uint8)
     except:
         return None
@@ -54,6 +54,7 @@ def main():
             sleep(0.5)
             return main()
 
+        img = zoom(img)
         cv2.imshow("streaming", img)
         cv2.waitKey(1)            
 

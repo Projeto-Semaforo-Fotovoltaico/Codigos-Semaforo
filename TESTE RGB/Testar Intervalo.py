@@ -68,6 +68,7 @@ def showImages(img1, img2):
 def foto(pasta, arquivo):
     endereco = pasta + rf'\{arquivo}'
     img = cv2.imread(endereco)
+    img = cv2.resize(img, (800, 600))
     
     tempo = time()
     redCircle, maskr = reconhecerVermelhos(img)

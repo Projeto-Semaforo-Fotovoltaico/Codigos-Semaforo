@@ -113,6 +113,7 @@ def fotos(pasta, arquivo):
 
     while True:
         img = cv2.imread(endereco)
+
         redCircle, maskr = reconhecerVermelhos(img)
 
         if redCircle is not None:
