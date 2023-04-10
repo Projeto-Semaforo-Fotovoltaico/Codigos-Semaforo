@@ -127,7 +127,14 @@ void loop(){
     reconectarRede();
 
     WiFiClient client = server.available();
+    client.setTimeout(500);
+  
+    // ENQUANTO NÃO FOR CONECTADO NO SERVIDOR CLIENTE
     if (!client)
+        return;
+
+    // SE O SERVIDOR CLIENTE NÃO ESTIVER DISPONÍVEL
+    if(!client.available())
         return;
 
     String requisicao = client.readStringUntil('\r'); 

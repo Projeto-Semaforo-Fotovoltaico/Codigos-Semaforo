@@ -1,12 +1,3 @@
-#include <lwip/priv/tcp_priv.h>
-
-// LIMPANDO MEMÓRIA FLASH
-void tcpCleanup(){
-  while (tcp_tw_pcbs != NULL)
-    tcp_abort(tcp_tw_pcbs);
-}
-
-
 #include <ESP8266WiFi.h>
 WiFiServer server(80);
 
@@ -145,14 +136,18 @@ void setup() {
 
 // FUNÇÃO PRINCIPAL DO PROGRAMA
 void loop(){
-    tcpCleanup();
     handleSinc();
-
     digitalWrite(LED, sinal);
+    
     WiFiClient client = server.available();
+    client.setTimeout(500);
   
     // ENQUANTO NÃO FOR CONECTADO NO SERVIDOR CLIENTE
     if (!client)
+        return;
+
+    // SE O SERVIDOR CLIENTE NÃO ESTIVER DISPONÍVEL
+    if(!client.available())
         return;
     
     // LENDO A REQUISIÇÃO RECEBIDA E AUMENTANDO i
