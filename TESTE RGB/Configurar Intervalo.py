@@ -1,12 +1,13 @@
 import cv2, os
 import numpy as np
-from random import randint
+import itertools
+import sys, pyperclip
 
 i = 0
 ponto1 = [0, 0]
 ponto2 = [0, 0]
 pasta = 'Teste'
- 
+
 
 # MOSTRANDO A IMAGEM PELO SEU OBJETO E ESPERANDO
 def configurarIntervalo(img):
@@ -61,25 +62,27 @@ def desenharCirculos(img, detected):
 
 
 # RECONHECENDO O CÍRCULO MAIS VERMELHO PRESENTE EM UMA IMAGEM
-def reconhecerVermelhos(img):
+def reconhecerVermelhos(img, intervalo):
+    B, G, R = intervalo
     HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    x1, y1, z1 = randint(0, 245), randint(0, 245), randint(0, 245)
 
-    low  = np.array([x1, y1, z1])
-    high = np.array([x1+10, y1+10, z1+10])
+    low  = np.array([B, G, R])
+    high = np.array([B+10, G+10, R+10])
 
     maskr = cv2.inRange(HSV, low, high)
     redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=10,
-                                     param1=50, param2=10, minRadius=1, maxRadius=500)
+                                         param1=50, param2=10, minRadius=1, maxRadius=500)
     
     if redCircles is not None:
         redCircle = redCircles[0][0]
 
         if validarPosicao(redCircle):
-            print('DETECTADO: ', f'][{low[0]}, {low[1]}, {low[2]}],', f'[{high[0]}, {high[1]}, {high[2]}]]\n')
-            return redCircle, maskr
+            txtIntervalo = f'[{low[0]}, {low[1]}, {low[2]}] , [{high[0]}, {high[1]}, {high[2]}]'
+            
+            print('DETECTADO: ', txtIntervalo)
+            return redCircle, maskr, txtIntervalo
 
-    return None, maskr
+    return None, maskr, ''
 
 
 # RETORNA VERDADEIRO SE UM NÚMERO ESTÁ EM UM INTERVALO INDEPENDENTE DA ORDEM
@@ -104,24 +107,43 @@ def validarPosicao(redCircle):
     return False
 
 
+# RETORNANDO TODAS AS COMBINAÇÕES POSSÍVEIS DOS ELEMENTOS DAS LISTAS
+def allCombinations(lista1, lista2, lista3):
+    combinacoes = []
+
+    for a, b, c in itertools.product(lista1, lista2, lista3):
+        combinacoes.append([a, b, c])
+
+    return combinacoes
+
+
 # EXIBE TODAS AS FOTOS ENCONTRADAS EM UM ENDEREÇO
 def fotos(pasta, arquivo):
     endereco = pasta + rf'\{arquivo}'
 
     configurarIntervalo(cv2.imread(endereco))
-    print('CARREGANDO...   ', end='')
+    img = cv2.imread(endereco)
 
-    while True:
-        img = cv2.imread(endereco)
+    bList = [c for c in range(0, 246, 5)]
+    gList = [c for c in range(0, 246, 5)]
+    rList = [c for c in range(0, 246, 5)]
 
-        redCircle, maskr = reconhecerVermelhos(img)
+    combinacoes = allCombinations(bList, gList, rList)
+    imagens = []
+
+    for B, G, R in combinacoes:
+        redCircle, maskr, txtIntervalo = reconhecerVermelhos(img, (B, G, R))
 
         if redCircle is not None:
-            img = desenharCirculos(img, redCircle)
-            showImages(img, maskr)
+            imagens.append([redCircle, maskr, txtIntervalo])
+    
+    for redCircle, maskr, txtIntervalo in imagens:
+        img = cv2.imread(endereco)
+        img = desenharCirculos(img, redCircle)
 
-            print()
-            print('CARREGANDO...   ', end='')
+        pyperclip.copy(txtIntervalo)
+        showImages(img, maskr)
+        print()
 
 
 # RETORNA O NOME DE TODOS OS ARQUIVOS ENCONTRADOS EM UMA PASTA

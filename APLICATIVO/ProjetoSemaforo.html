@@ -107,6 +107,11 @@
                 <p class='alinhado'>Estado Raspberry: </p>
                 <p class='alinhado' id='func'>FUNCIONANDO</p>
             </div>
+            <div>
+                <p style='margin-top: 50px;'>Angulação da Câmera</p>
+                <input style='width: 500px;'id='scrollBar' type='range' min='0' max='180' value='90' oninput='scrollBar(this.value)'>
+                <p style='margin-bottom: 50px;'>Valor: <span id='servoValue'>90</span></p>
+            </div>
         </div>
     </section>
 
@@ -195,6 +200,12 @@
         function desativar(){
             fetch('http://192.168.4.1/DESATIVAR')
             fetch('http://192.168.4.3/DESATIVAR')
+        }
+
+
+        function scrollBar(valueDisplay){
+            fetch('http://192.168.4.1/SERVO$' + valueDisplay + '!')
+            document.getElementById('servoValue').textContent = valueDisplay
         }
 
 

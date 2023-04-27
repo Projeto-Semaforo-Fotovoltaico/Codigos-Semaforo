@@ -67,7 +67,7 @@ void configurarCamera(){
     config.pixel_format = PIXFORMAT_JPEG; 
     config.grab_mode = CAMERA_GRAB_LATEST;
     config.fb_location = CAMERA_FB_IN_PSRAM;
-    config.jpeg_quality = 9;
+    config.jpeg_quality = 3;
     config.fb_count = 2;
 
     // INICIALIZANDO A CAMERA
@@ -127,7 +127,7 @@ void loop(){
     reconectarRede();
 
     WiFiClient client = server.available();
-    client.setTimeout(500);
+    client.setTimeout(5000);
   
     // ENQUANTO NÃO FOR CONECTADO NO SERVIDOR CLIENTE
     if (!client)
@@ -143,4 +143,5 @@ void loop(){
 
     client.flush();
     client.stop();
+    delay(1);
 }

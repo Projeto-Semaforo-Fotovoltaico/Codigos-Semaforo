@@ -148,6 +148,7 @@ void setup() {
 
 // FUNÇÃO PRINCIPAL DO PROGRAMA
 void loop(){
+    delay(1000);
     handleSinc();
     digitalWrite(LED, sinal);
     

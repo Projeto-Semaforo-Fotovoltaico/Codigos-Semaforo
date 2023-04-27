@@ -2,16 +2,14 @@
 #define TEMPO_AMARELO  5000
 #define TEMPO_VERMELHO 10000
 
-int verde    = 10;
-int amarelo  = 11;
-int vermelho = 12;  
-int botao    = 2;
+#define verde     17
+#define amarelo   12
+#define vermelho  13
+#define botao     27
 
-long contagem = millis();
+unsigned long contagem = millis();
+unsigned long A = millis();
 int  x = 0;
-
-int A = 0;
-
 
 void setup(){
     pinMode(verde,    OUTPUT);
@@ -33,19 +31,13 @@ void loop(){
   int estadoBotao = !digitalRead(botao);
   
   if(estadoBotao){
-      digitalWrite(verde,    LOW);
-      digitalWrite(vermelho, LOW);
+      digitalWrite(verde,    HIGH);
+      digitalWrite(vermelho, HIGH);
       digitalWrite(amarelo,  HIGH);
       
-      delay(TEMPO_AMARELO);
-      digitalWrite(amarelo, LOW);
-      
-      digitalWrite(vermelho, HIGH);
       delay(TEMPO_VERMELHO);
     
-      digitalWrite(vermelho, LOW);
-    
-      x = 0;              // RESET
+      x = 0;                // RESET
       contagem = millis();  // RESET
   }
   

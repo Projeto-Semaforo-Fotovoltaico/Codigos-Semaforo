@@ -5,16 +5,14 @@ from time import sleep, time
 # VARIÁVEIS GLOBAIS PARA SEREM UTILIZADAS NAS FUNÇÕES DO ALGORÍTIMO
 temposVermelho = np.array([])  # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES VERMELHO
 temposResto    = np.array([])  # VETOR PARA ARMAZENAR OS TEMPOS DE DECÇÕES NÃO VERMELHO
-atualizacao = time()           # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
+atualizacao    = time()        # VARIÁVEL ARMAZENAR O TEMPO DA ÚLTIMA ATUALIZAÇÃO
 estadoAnterior = False         # VARIÁVEL PARA ARMAZENAR O ESTADO ANTERIOR
-erroLeitura = 0                # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEITURA)
-sinc = 0                       # VARIÁVEL PARA CONTAGEM DE DETECÇÕES 
+erroLeitura    = 0             # VARIÁVEL PARA ARMAZENAR O ERRO (TEMPO PARA LEITURA)
 
 # VARIÁVEIS GLOBAIS PARA LINKS DE REQUISIÇÃO WEB SERVIDOR LOCAL
-urlCamera   = 'http://192.168.4.6/CAPTURE'
+urlCamera   = 'http://192.168.4.6/'
 urlNode1    = 'http://192.168.4.1/'
 urlNode2    = 'http://192.168.4.3/'
-
 
 # TABELA T-STUDENT PAR PRECISÃO E EXATIDÃO DOS DADOS POR INCERTEZA RELATIVA
 tStudent = [
@@ -23,26 +21,21 @@ tStudent = [
     2.060, 2.056, 2.052, 2.048, 2.045, 2.042
 ]
 
-
 # DADOS QUE SÃO OS INTERVALOS DE DETECÇÃO RGB
 dadosRGB = np.array([
-    [171, 184, 180], [181, 194, 190],
-    [171, 158, 245], [181, 168, 255],
-    [172, 157, 137], [182, 167, 147],
-    [172, 186, 187], [182, 196, 197],
-    [170, 158, 245], [180, 168, 255],
-    [173, 201, 235], [183, 211, 245],
-    [175, 172, 245], [185, 182, 255],
-    [171, 199, 245], [181, 209, 255],
-    [174, 107, 245], [184, 117, 255],
-    [166, 65, 245] , [176, 75, 255]
+    [0, 60, 245]    , [10, 70, 255],
+    [175, 150, 150] , [185, 160, 160],
+    [170, 150, 150] , [180, 160, 160],
+    [170, 155, 150] , [180, 165, 160],
+    [170, 150, 245] , [180, 160, 255],
+    [170, 160, 245] , [180, 170, 255]
 ], dtype=np.uint8)
 
 
 # OBTENDO E ARMAZENANDO O ATUAL QUADRO DA FILMAGEM 
 def getImage(url):
     try:
-        img = urllib.request.urlopen(url, timeout=2)
+        img = urllib.request.urlopen(url, timeout=5)
         img = np.array(bytearray(img.read()), dtype=np.uint8)
     except:
         return None
@@ -63,7 +56,7 @@ def juntarIntervalos(HSV):
 
 
 # DANDO UM ZOOM NA IMAGEM PARA MELHOR DETECÇÃO
-def zoom(img, zoom_factor=1.5):
+def zoom(img, zoom_factor=2):
     y_size = img.shape[0]
     x_size = img.shape[1]
 
@@ -82,7 +75,7 @@ def reconhecerVermelhos(img):
     maskr = juntarIntervalos(HSV)
 
     redCircles = cv2.HoughCircles(maskr, cv2.HOUGH_GRADIENT, 1, minDist=80,
-                                         param1=50, param2=10, minRadius=5, maxRadius=300)
+                                         param1=50, param2=8, minRadius=5, maxRadius=300)
 
     if redCircles is not None:
         return True
@@ -103,80 +96,79 @@ def processaSinal(vermelhos):
 # SE O SINAL MUDOU PARA VERMELHO, ARMAZENE O TEMPO DE SINAL NÃO VERMELHO (VICE-VERSA)
 def adicionarSinal(sinal):
     global temposVermelho, temposResto, sinc, atualizacao, estadoAnterior
+    tempoSinal = time() - atualizacao + 0.4
+    
+    if tempoSinal < 5:
+        return
 
     if sinal:
-        requisicao(urlNode2 + 'SINAL', timeout=0.2) # SINAL VERMELHO
-        requisicao(urlNode1 + 'SINAL', timeout=0.2) # SINAL VERMELHO
+        requisicao(urlNode1 + 'ATIVAR', timeout=0.2) # SINAL VERMELHO
+        requisicao(urlNode2 + 'ATIVAR', timeout=0.2) # SINAL VERMELHO
 
-        print(f'{atualizacao} ADICIONADO AO SINAL NÃO VERMELHO')
-        temposResto = np.append(temposResto, atualizacao)
+        print(f'{tempoSinal} ADICIONADO AO SINAL NÃO VERMELHO')
+        temposResto = np.append(temposResto, tempoSinal)
     else:
-        requisicao(urlNode2 + 'SINAL', timeout=0.2) # SINAL NÃO VERMELHO
-        requisicao(urlNode1 + 'SINAL', timeout=0.2) # SINAL NÃO VERMELHO
+        requisicao(urlNode1 + 'DESATIVAR', timeout=0.2) # SINAL NÃO VERMELHO
+        requisicao(urlNode2 + 'DESATIVAR', timeout=0.2) # SINAL NÃO VERMELHO
 
-        print(f'{atualizacao} ADICIONADO AO SINAL VERMELHO')
-        temposVermelho = np.append(temposVermelho, atualizacao)
+        print(f'{tempoSinal} ADICIONADO AO SINAL VERMELHO')
+        temposVermelho = np.append(temposVermelho, tempoSinal) 
 
-    sinc = sinc + 1          # INCREMENTANDO A SINCRONIZAÇÃO
-    estadoAnterior = sinal   # ATUALIZANDO O ESTADO ANTERIOR
-    atualizacao = time()     # ATUALIZANDO O TEMPO DE ATUALIZAÇÃO
+    estadoAnterior = sinal
+    atualizacao    = time()
 
 
-# ADICIONANDO OS TEMPOS EM QUE O SINAL VERMELHO FICOU DESATIVADO
-def verificarSincronismo(sinal):
-    global atualizacao, sinc, temposVermelho, temposResto
+# VALIDANDO A PRECISÃO E EXATIDÃO DOS DADOS REGISTRADOS
+def verificarSincronismo():
+    global atualizacao, sinc, temposVermelho
     global estadoAnterior, urlNode1, urlNode2, erroLeitura
 
-    # PRIMERIA VEZ QUE ENTRA NA FUNÇÃO, ESTABELEÇA AS CONDIÇÕES INICIAIS
-    if sinc == 0:
-        adicionarSinal(sinal)
-        return False
-
-    # SÓ PROSSEGUE SE O SINAL MUDAR DE ESTADO (ATUALIZAÇÃO DE SINAL)
-    if estadoAnterior == sinal:
+    if len(temposVermelho) < 15 or len(temposResto) < 15:
         return False
     
-    # ENCONTRANDO E ATUALIZANDO O TEMPO DE VARIAÇÃO DE SINAL
-    atualizacao = time() - atualizacao
-    
-    # TOTAL DE VARIAÇÕES DE SINAL NECESSÁRIAS PARA SINCRONIZAÇÃO
-    if validarDados(temposVermelho[1:], temposResto[1:]) and sinal:
-        erroTotal      = int(erroLeitura * 1000) + 0
-        mediaVermelhos = int(np.mean(treatData(temposVermelho[1:]))  * 1000)
-        mediaResto     = int(np.mean(treatData(temposResto[1:]))     * 1000)
-
-        print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS:         {mediaVermelhos/1000}')
-        print(f'MÉDIA DOS TEMPOS DE SINAIS NÃO VERMELHOS:     {mediaResto/1000}')
-        print(f'O TEMPO DE LEITURA DOS ÚLTIMOS SINAIS RAM DE: {erroTotal/1000}')
-        
-        requisicao(urlNode1 + f'SINC?{mediaVermelhos}A{mediaResto}A{erroTotal + 200}A', timeout=0.2)
-        requisicao(urlNode2 + f'SINC?{mediaVermelhos}A{mediaResto}A{erroTotal + 400}A', timeout=0.2)
+    if incertezaRelativa(temposVermelho[2:]) < 0.1 and incertezaRelativa(temposResto[2:]) < 0.1:
         return True
     
-    # A CADA VARIAÇÃO DE SINAL, INCREMENTE A VARIÁVEL E RESETE A CONTAGEM
-    adicionarSinal(sinal)
     return False
+
+
+# ATIVANDO O MODO SÍNCRONO, ENVIANDO TODOS OS DADOS COLETADOS
+def ativarSincronismo():
+    global erroTotal, erroLeitura, temposVermelho, temposResto, urlNode1, urlNode2
+
+    erroTotal      = int(erroLeitura * 1000) 
+    mediaVermelhos = int(np.mean(treatData(temposVermelho[2:]))  * 1000)
+    mediaResto     = int(np.mean(treatData(temposResto[2:]))     * 1000)
+
+    print(f'MÉDIA DOS TEMPOS DE SINAIS VERMELHOS:         {mediaVermelhos/1000}')
+    print(f'MÉDIA DOS TEMPOS DE SINAIS NÃO VERMELHOS:     {mediaResto/1000}')
+    print(f'O TEMPO DE LEITURA DOS ÚLTIMOS SINAIS RAM DE: {erroTotal/1000}')
+    
+    requisicao(urlNode1 + f'SINC?{mediaVermelhos}A{mediaResto}A{erroTotal + 200}A', timeout=0.2)
+    requisicao(urlNode2 + f'SINC?{mediaVermelhos}A{mediaResto}A{erroTotal + 400}A', timeout=0.2)
 
 
 # FUNÇÃO PRINCIPAL DO PROGRAMA NO MODO LOOP ATÉ O SINCRONISMO
 def main():
-    global urlCamera, erroLeitura
+    global urlCamera, erroLeitura, estadoAnterior
     requisicao(urlNode1 + "RASPBERRY", timeout=5)
 
     while True:
         erroLeitura = time()
-        img = getImage(urlCamera)
+        img = getImage(urlCamera + 'CAPTURE')
         
         if img is None:
-            print('SEM IMAGEM')
             sleep(0.5)
-            return main()
+            continue
 
-        sinal = reconhecerVermelhos(img)
-
+        sinal = reconhecerVermelhos(zoom(img))
         erroLeitura = time() - erroLeitura
-        if verificarSincronismo(sinal):
-            break
+
+        if sinal != estadoAnterior:
+            adicionarSinal(sinal)
+        
+        if verificarSincronismo() and sinal:
+            ativarSincronismo()
 
 
 # ENVIAR UMA REQUISIÇÃO PARA UM LINK COM UM TEMPO MÁXIMO DE RESPOSTA
@@ -185,6 +177,7 @@ def requisicao(url, timeout):
         return urllib.request.urlopen(url, timeout=timeout)
     except Exception:
         return False
+
 
 # RETORNANDO A MÉDIA DE UMA LISTA SEM OUTLIERS
 def treatData(array):
@@ -210,17 +203,6 @@ def incertezaRelativa(array):
         T = tStudent[n-2]  
 
     return T * np.std(array, ddof = 1)/(n**0.5)/np.mean(array)
-
-
-# VALIDANDO A PRECISÃO E EXATIDÃO DOS DADOS REGISTRADOS
-def validarDados(array1, array2):
-    if len(array1) < 5 or len(array2) < 5:
-        return False
-    
-    if incertezaRelativa(array1) < 0.4 and incertezaRelativa(array2) < 0.4:
-        return True
-    
-    return False
 
 
 # CONECTANDO A UMA REDE WIFI PELO PC ATRAVÉS DE SEU NOME PÚBLICO
