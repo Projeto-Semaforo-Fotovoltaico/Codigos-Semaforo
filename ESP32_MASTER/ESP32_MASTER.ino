@@ -1,6 +1,8 @@
 #include <WiFi.h>
 #include <ESP32Servo.h>
 #include <esp_timer.h>
+#include <ArduinoOTA.h>
+
 WiFiServer server(80);
 Servo servo;
 
@@ -10,8 +12,12 @@ Servo servo;
 #define RASPBERRY 23
 #define SERVO 15
 
-// DECLARAÇÃO DA FUNÇÃO PARA CRIAÇÃO DE PÁGINA HTML
+// DECLARAÇÃO DAS FUNÇÕES DO PROGRAMA
 void paginaHTML(WiFiClient *cl);
+void apitar(void);
+void processaRequisicao(String requisicao);
+void sincMode(String req);
+void handleSinc(void);
 
 // VARIÁVEIS GLOBAIS
 int tempoVermelho, tempoResto, erro, nivelBateria;
@@ -63,6 +69,41 @@ void processaRequisicao(String requisicao){
 
     else if(requisicao.indexOf("SERVO") != -1)
         servo.write(requisicao.substring(requisicao.indexOf("$")+1, requisicao.indexOf("!")).toInt());
+}
+
+void setupOTA(const char* hostname, const char* password){
+    ArduinoOTA.setHostname(hostname);
+    ArduinoOTA.setPassword(password);
+
+    ArduinoOTA.onStart([]() {
+        Serial.println("Iniciando atualizacao...");
+    });
+
+    ArduinoOTA.onEnd([]() {
+        Serial.println("Atualizacao concluida!");
+    });
+
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+        Serial.printf("Progresso: %u%%\r", (progress / (total / 100)));
+    });
+
+    ArduinoOTA.onError([](ota_error_t error) {
+        Serial.printf("Erro[%u]: ", error);
+
+        if (error == OTA_AUTH_ERROR)
+            Serial.println("Falha na autenticacao");
+        else if (error == OTA_BEGIN_ERROR)
+            Serial.println("Falha no inicio da atualizacao");
+        else if (error == OTA_CONNECT_ERROR)
+            Serial.println("Falha na conexao");
+        else if (error == OTA_RECEIVE_ERROR)
+            Serial.println("Falha na recepcao");
+        else if (error == OTA_END_ERROR)
+            Serial.println("Falha no fim da atualizacao");
+    });
+
+    ArduinoOTA.begin();
+    Serial.println("OTA pronta");
 }
 
 
@@ -129,6 +170,7 @@ void setup() {
     Serial.begin(9600);
     digitalWrite(SERVO, HIGH);
     startServer("ProjetoSemaforo", "12345678");
+    setupOTA("ProjetoSemaforo", "12345678");
 
     nivelBateria = 80;
     estadoRaspberry = false;
@@ -152,6 +194,8 @@ void setup() {
 
 // FUNÇÃO PRINCIPAL DO PROGRAMA
 void loop(){
+    ArduinoOTA.handle();
+
     handleSinc();
     digitalWrite(LED, sinal);
     
