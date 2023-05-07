@@ -1,7 +1,7 @@
 #include <WiFi.h>
-#include <ESP32Servo.h>
-#include <esp_timer.h>
 #include <ArduinoOTA.h>
+#include <esp_timer.h>
+#include <ESP32Servo.h>
 
 WiFiServer server(80);
 Servo servo;
@@ -71,6 +71,7 @@ void processaRequisicao(String requisicao){
         servo.write(requisicao.substring(requisicao.indexOf("$")+1, requisicao.indexOf("!")).toInt());
 }
 
+// CONFIGURANDO O OTA (ATUALIZAÇÃO DE FIRMWARE VIA WIFI)
 void setupOTA(const char* hostname, const char* password){
     ArduinoOTA.setHostname(hostname);
     ArduinoOTA.setPassword(password);
@@ -103,7 +104,7 @@ void setupOTA(const char* hostname, const char* password){
     });
 
     ArduinoOTA.begin();
-    Serial.println("OTA pronta");
+    Serial.println("OTA pronto");
 }
 
 
@@ -168,7 +169,6 @@ void apitar(){
 // ESTABELECENDO A COMUNICAÇÃO WIFI E MONITOR SERIAL
 void setup() {
     Serial.begin(9600);
-    digitalWrite(SERVO, HIGH);
     startServer("ProjetoSemaforo", "12345678");
     setupOTA("ProjetoSemaforo", "12345678");
 

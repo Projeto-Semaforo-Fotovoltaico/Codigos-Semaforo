@@ -1,13 +1,19 @@
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
+#include <ArduinoOTA.h>
+#include <esp_timer.h>
+
 WiFiServer server(80);
 
 // PINO DIGITAL CONECTADO AO RELÉ DAS LÂMPADAS E AO RASPBERRY
-#define LED D0
-#define BUZZER D5
-#define RASPBERRY D2
+#define LED 5
+#define BUZZER 19
 
-// DECLARAÇÃO DA FUNÇÃO PARA CRIAÇÃO DE PÁGINA HTML
+// DECLARAÇÃO DAS FUNÇÕES DO PROGRAMA
 void paginaHTML(WiFiClient *cl);
+void apitar(void);
+void processaRequisicao(String requisicao);
+void sincMode(String req);
+void handleSinc(void);
 
 // VARIÁVEIS GLOBAIS
 int tempoVermelho, tempoResto, erro, nivelBateria;
@@ -28,20 +34,19 @@ void conectarRede(char* nomeRede, char* senhaRede){
 
     while(WiFi.status() != WL_CONNECTED){
         delay(500);
-        Serial.print(F("."));
+        Serial.print(".");
     }
 
     server.begin();
-    Serial.print(F("\n"));
+    Serial.println();
     
     if (WiFi.status() == WL_CONNECTED)
-        Serial.print(F("WIFI CONECTADO!\n"));
+        Serial.println("WIFI CONECTADO!");
     else
-        Serial.print(F("WIFI NÃO CONECTADO!\n"));
+        Serial.println("WIFI NÃO CONECTADO!");
   
-    Serial.print(F("ENDERECOIP: "));
-    Serial.print(WiFi.localIP());
-    Serial.print(F("\n"));
+    Serial.print("ENDERECOIP: ");
+    Serial.println(WiFi.localIP());
 }
 
 
@@ -50,20 +55,58 @@ void processaRequisicao(String requisicao){
     Serial.print("REQUISICAO: ");
     Serial.println(requisicao);
 
-    if(requisicao.indexOf("RASPBERRY") != -1)
-        estadoRaspberry = true;
-
-    if(requisicao.indexOf("ATIVAR") != -1)
-        sinal = true;
-  
-    if(requisicao.indexOf("DESATIVAR") != -1)
+    if(requisicao.indexOf("DESATIVAR") != -1){
         sinal = false;
+        apitar();
+    }
 
-    if(requisicao.indexOf("SINAL") != -1)
+    else if(requisicao.indexOf("ATIVAR") != -1){
+        sinal = true;
+        apitar();
+    }
+
+    else if(requisicao.indexOf("APITAR") != -1)
         apitar();
 
-    if(requisicao.indexOf("SINC?") != -1)
+    else if(requisicao.indexOf("SINC?") != -1)
         sincMode(requisicao);
+}
+
+
+// CONFIGURANDO O OTA (ATUALIZAÇÃO DE FIRMWARE VIA WIFI)
+void setupOTA(const char* hostname, const char* password){
+    ArduinoOTA.setHostname(hostname);
+    ArduinoOTA.setPassword(password);
+
+    ArduinoOTA.onStart([]() {
+        Serial.println("Iniciando atualizacao...");
+    });
+
+    ArduinoOTA.onEnd([]() {
+        Serial.println("Atualizacao concluida!");
+    });
+
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+        Serial.printf("Progresso: %u%%\r", (progress / (total / 100)));
+    });
+
+    ArduinoOTA.onError([](ota_error_t error) {
+        Serial.printf("Erro[%u]: ", error);
+
+        if (error == OTA_AUTH_ERROR)
+            Serial.println("Falha na autenticacao");
+        else if (error == OTA_BEGIN_ERROR)
+            Serial.println("Falha no inicio da atualizacao");
+        else if (error == OTA_CONNECT_ERROR)
+            Serial.println("Falha na conexao");
+        else if (error == OTA_RECEIVE_ERROR)
+            Serial.println("Falha na recepcao");
+        else if (error == OTA_END_ERROR)
+            Serial.println("Falha no fim da atualizacao");
+    });
+
+    ArduinoOTA.begin();
+    Serial.println("OTA pronto");
 }
 
 
@@ -72,12 +115,15 @@ void handleSinc(void){
     if(!sinc)
         return;
 
-    bool condicao = (sinal  & millis() - contagem >= tempoVermelho) ||
-                    (!sinal & millis() - contagem >= tempoResto);
+    unsigned long tempoAtual = esp_timer_get_time()/1000;
+    unsigned long tempoDecorrido = tempoAtual - contagem;
+
+    bool condicao = (sinal  && tempoDecorrido >= tempoVermelho) ||
+                    (!sinal && tempoDecorrido >= tempoResto);
     
     if(condicao){
         sinal = !sinal;
-        contagem = millis();
+        contagem = tempoAtual;
         apitar();
     }
 }
@@ -98,27 +144,30 @@ void sincMode(String req){
     Serial.println(tempoResto);
     Serial.println(erro);
     Serial.println();
-
-    // DESLIGANDO O RASPBERRY E ATUALIZANDO O SINAL PARA VERMELHO
-    digitalWrite(RASPBERRY, !LOW);
-    estadoRaspberry = false;
-    sinal = true;
     
     // NA PRIMEIRA ATIVAÇÃO TEMOS QUE CONSIDERAR O DELAY DE ERRO  
+    sinal = true;
     digitalWrite(LED, sinal);
     delay(tempoVermelho-erro);
 
     sinal = false;
     sinc  = true;
-    contagem = millis();
+    contagem = esp_timer_get_time()/1000;
 }
 
 
 // FUNÇÃO PARA ATIVAR O BUZZER EM UM CERTO INTERVALO PADRONIZADO
 void apitar(){
-  digitalWrite(BUZZER, HIGH);
-  delay(200);
-  digitalWrite(BUZZER, LOW);
+  tone(BUZZER, 1000);
+  delay(400);
+  noTone(BUZZER);
+}
+
+
+// RECONECTAR REDE CASO PERCA A CONEXÃO
+void reconectarRede(void){
+    if (WiFi.status() != WL_CONNECTED)
+        conectarRede("ProjetoSemaforo", "12345678");
 }
 
 
@@ -126,34 +175,28 @@ void apitar(){
 void setup() {
     Serial.begin(9600); 
     conectarRede("ProjetoSemaforo", "12345678");
+    setupOTA("ProjetoSemaforo", "12345678");
 
     nivelBateria = 80;
-    estadoRaspberry = false;
     sinal = false;
     sinc  = false;
     
     pinMode(LED, OUTPUT);
-    pinMode(RASPBERRY, OUTPUT);
-    pinMode(LED_BUILTIN, OUTPUT);
-    
     digitalWrite(LED, LOW);
-    digitalWrite(LED_BUILTIN, LOW);
-
-    delay(5000);
-    digitalWrite(RASPBERRY, !HIGH);
-
     apitar();
 }
 
 
 // FUNÇÃO PRINCIPAL DO PROGRAMA
 void loop(){
-    delay(1000);
+    ArduinoOTA.handle();
+    reconectarRede();
+
     handleSinc();
     digitalWrite(LED, sinal);
     
     WiFiClient client = server.available();
-    client.setTimeout(500);
+    client.setTimeout(5000);
   
     // ENQUANTO NÃO FOR CONECTADO NO SERVIDOR CLIENTE
     if (!client)
@@ -174,6 +217,7 @@ void loop(){
     // LIMPANDO O LIXO GERADO PELA REQUISIÇÃO E ENCERRANDO
     client.flush();
     client.stop();
+    delay(1);
 }
 
 

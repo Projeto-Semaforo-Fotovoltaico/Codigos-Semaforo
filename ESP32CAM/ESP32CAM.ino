@@ -1,5 +1,6 @@
 #include "esp_camera.h"
 #include <WiFi.h>
+#include <ArduinoOTA.h>
 
 #define CAMERA_MODEL_AI_THINKER
 #include "camera_pins.h"
@@ -99,6 +100,40 @@ void sendImage(WiFiClient &client){
     esp_camera_fb_return(fb);
 }
 
+void setupOTA(const char* hostname, const char* password){
+    ArduinoOTA.setHostname(hostname);
+    ArduinoOTA.setPassword(password);
+
+    ArduinoOTA.onStart([]() {
+        Serial.println("Iniciando atualizacao...");
+    });
+
+    ArduinoOTA.onEnd([]() {
+        Serial.println("Atualizacao concluida!");
+    });
+
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+        Serial.printf("Progresso: %u%%\r", (progress / (total / 100)));
+    });
+
+    ArduinoOTA.onError([](ota_error_t error) {
+        Serial.printf("Erro[%u]: ", error);
+
+        if (error == OTA_AUTH_ERROR)
+            Serial.println("Falha na autenticacao");
+        else if (error == OTA_BEGIN_ERROR)
+            Serial.println("Falha no inicio da atualizacao");
+        else if (error == OTA_CONNECT_ERROR)
+            Serial.println("Falha na conexao");
+        else if (error == OTA_RECEIVE_ERROR)
+            Serial.println("Falha na recepcao");
+        else if (error == OTA_END_ERROR)
+            Serial.println("Falha no fim da atualizacao");
+    });
+
+    ArduinoOTA.begin();
+    Serial.println("OTA pronto");
+}
 
 void reconectarRede(void){
     if(WiFi.status() == WL_CONNECTED)
@@ -113,6 +148,7 @@ void setup(){
     Serial.begin(9600); 
     Serial.setDebugOutput(false);
     conectarRede("ProjetoSemaforo", "12345678");
+    setupOTA("ProjetoSemaforo", "12345678");
 
     exibirInformacoes();
     configurarCamera();
@@ -125,6 +161,7 @@ void setup(){
 
 void loop(){
     reconectarRede();
+    ArduinoOTA.handle();
 
     WiFiClient client = server.available();
     client.setTimeout(5000);
